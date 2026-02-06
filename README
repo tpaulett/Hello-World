@@ -1,1 +1,65 @@
-"Hello World!"
+# Strava API Client
+
+A Python client and CLI for querying the Strava V3 API.
+
+## Setup
+
+1. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+2. Register an app at https://www.strava.com/settings/api and note your
+   Client ID and Client Secret.
+
+3. Copy `.env.example` to `.env` and fill in your credentials:
+   ```
+   cp .env.example .env
+   ```
+
+4. Run the OAuth authorization flow to get a refresh token:
+   ```
+   source .env
+   python -m strava_client.cli authorize
+   ```
+   Save the printed refresh token to your `.env` file.
+
+## CLI Usage
+
+Export your environment variables first (`source .env` or equivalent), then:
+
+```
+# Show your athlete profile
+python -m strava_client.cli athlete
+
+# Show your stats
+python -m strava_client.cli stats
+
+# List recent activities
+python -m strava_client.cli activities --per-page 5
+
+# Get a specific activity
+python -m strava_client.cli activity 1234567890
+
+# Explore cycling segments in an area (sw_lat,sw_lng,ne_lat,ne_lng)
+python -m strava_client.cli segments-explore 37.7,-122.5,37.8,-122.4
+
+# Get club details
+python -m strava_client.cli club 12345
+
+# List your routes
+python -m strava_client.cli routes
+```
+
+## Library Usage
+
+```python
+from strava_client.auth import token_store_from_env
+from strava_client.client import StravaClient
+
+token_store = token_store_from_env()
+client = StravaClient(token_store)
+
+athlete = client.get_athlete()
+activities = client.list_activities(per_page=5)
+```
