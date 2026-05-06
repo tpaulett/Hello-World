@@ -191,17 +191,16 @@
 <!-- Connect Card -->
 <div class="card" id="connectCard">
   <h2>Connect a Bank Account</h2>
-  <button id="connectBtn">Connect with Plaid</button>
+  <div style="background: #f0f7ff; border-left: 3px solid #0a2540; padding: 10px 12px; margin-bottom: 16px; border-radius: 4px; font-size: 12px; color: #0a2540;">
+    <strong>Mode:</strong> <span id="modeLabel">Checking server...</span>
+  </div>
+  <button id="connectBtn" disabled>Connect with Plaid</button>
   <p class="status" id="connectStatus"></p>
 </div>
 
 <!-- Data Card -->
 <div class="card" id="dataSection">
   <h2>Your Financial Data <span class="badge" id="institutionBadge"></span></h2>
-
-  <div style="background: #f0f7ff; border-left: 3px solid #0a2540; padding: 10px 12px; margin-bottom: 16px; border-radius: 4px; font-size: 12px; color: #0a2540;">
-    <strong>Mode:</strong> <span id="modeLabel">Loading...</span>
-  </div>
 
   <div class="tab-bar">
     <button class="tab active" onclick="showTab('accounts')">Accounts</button>
@@ -219,20 +218,24 @@
   let accessToken = null;
   let isMockMode = false;
 
-  // Check if mock mode is enabled
   async function checkMode() {
+    const label = document.getElementById('modeLabel');
+    const btn = document.getElementById('connectBtn');
     try {
       const res = await fetch(`${API}/health`);
       const data = await res.json();
       isMockMode = data.mode === 'mock';
-      document.getElementById('modeLabel').textContent =
-        isMockMode ? '📚 Mock Mode (Test Data)' : '🔌 Production Mode (Real API)';
+      label.textContent = isMockMode ? 'Mock Mode (Test Data)' : 'Production Mode (Real API)';
     } catch (e) {
-      console.error('Could not check mode:', e);
+      // Server unreachable — default to mock so the button still works
+      isMockMode = true;
+      label.textContent = 'Mock Mode (server offline — check npm start)';
+      label.style.color = '#b45309';
+    } finally {
+      btn.disabled = false;
     }
   }
 
-  // Load mode on startup
   checkMode();
 
   document.getElementById('connectBtn').addEventListener('click', async () => {
