@@ -2,24 +2,57 @@
 
 ## Quick Start
 
-1. **Set up credentials**
-   ```bash
-   cp .env.example .env
-   ```
-   
-2. **Use Plaid Sandbox credentials** (free, no real bank account needed)
-   - Get free sandbox credentials at https://dashboard.plaid.com/
-   - Set `PLAID_ENV=sandbox` in `.env`
+### Option A: Mock Mode (Easiest - No Plaid Account Needed!) ⭐
 
-3. **Start the server**
-   ```bash
-   npm install
-   npm start
+```bash
+cp .env.example .env
+npm install
+npm start
+```
+
+The `.env` defaults to `USE_MOCK_MODE=true` — just run it! No Plaid credentials required.
+
+### Option B: Real Plaid Sandbox
+
+1. Create free account at https://dashboard.plaid.com/
+2. Get your `PLAID_CLIENT_ID` and `PLAID_SECRET`
+3. Edit `.env`:
    ```
+   USE_MOCK_MODE=false
+   PLAID_CLIENT_ID=your_id
+   PLAID_SECRET=your_secret
+   PLAID_ENV=sandbox
+   ```
+4. Start: `npm install && npm start`
 
 ## Testing Methods
 
-### Method 1: Web UI (Easiest)
+### Method 0: Mock Mode - No API Credentials Required ⭐
+
+In mock mode, the web UI shows a simple dropdown to select test accounts:
+
+1. Open `http://localhost:3000`
+2. Click "Connect with Plaid"
+3. Select a test account from the prompt:
+   - `user_good` - Standard account (checking + savings)
+   - `user_multi_account` - Multiple accounts (checking, savings, credit card)
+4. Instantly see mock data for accounts, transactions, and routing numbers
+
+**Mock Mode Benefits:**
+- ✅ Zero setup - just `npm install && npm start`
+- ✅ No Plaid account needed
+- ✅ Instant testing
+- ✅ Perfect for development and demos
+- ✅ Same API endpoints as production
+
+**To disable mock mode:**
+```
+USE_MOCK_MODE=false
+```
+
+---
+
+### Method 1: Web UI (With Real Plaid API)
 
 Open `http://localhost:3000` in your browser:
 
