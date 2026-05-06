@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "Plaid Integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Create Link Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"user-123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/create-link-token",
+          "host": ["{{base_url}}"],
+          "path": ["create-link-token"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Exchange Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"public_token\": \"{{public_token}}\",\n  \"userId\": \"user-123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/exchange-token",
+          "host": ["{{base_url}}"],
+          "path": ["exchange-token"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Accounts",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"access_token\": \"{{access_token}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/get-accounts",
+          "host": ["{{base_url}}"],
+          "path": ["get-accounts"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Transactions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"access_token\": \"{{access_token}}\",\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-05-06\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/get-transactions",
+          "host": ["{{base_url}}"],
+          "path": ["get-transactions"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Auth (Routing Numbers)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"access_token\": \"{{access_token}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/get-auth",
+          "host": ["{{base_url}}"],
+          "path": ["get-auth"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "public_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
