@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plaid Integration Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+      color: #1a1a1a;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0a2540;
+    }
+
+    header p {
+      color: #6b7280;
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 640px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0a2540;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h2 .badge {
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 24px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #connectBtn {
+      background: #0a2540;
+      color: white;
+      width: 100%;
+    }
+
+    #connectBtn:hover:not(:disabled) { background: #1a3a5c; }
+
+    .mode-badge {
+      background: #f0f7ff;
+      border-left: 3px solid #0a2540;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #0a2540;
+    }
+
+    .mode-badge strong { margin-right: 4px; }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      background: #f0f4f8;
+      color: #6b7280;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+
+    .tab.active {
+      background: #0a2540;
+      color: white;
+    }
+
+    .tab:hover:not(.active) { background: #e0e7ef; }
+
+    .account-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .account-item:last-child { border-bottom: none; }
+
+    .account-name { font-weight: 500; font-size: 14px; }
+    .account-meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+    .account-balance { text-align: right; }
+    .balance-current { font-weight: 600; font-size: 15px; }
+    .balance-available { font-size: 12px; color: #9ca3af; }
+
+    .tx-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .tx-item:last-child { border-bottom: none; }
+
+    .tx-name { font-size: 13px; font-weight: 500; }
+    .tx-date { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+    .tx-amount {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tx-amount.debit { color: #ef4444; }
+    .tx-amount.credit { color: #22c55e; }
+
+    .auth-item {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .auth-item strong { display: block; font-size: 14px; margin-bottom: 6px; }
+    .auth-item span { color: #6b7280; }
+
+    .empty {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    .status {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    .status.error { color: #ef4444; }
+    .status.success { color: #22c55e; }
+
+    #dataSection { display: none; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .modal h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #0a2540;
+    }
+
+    .modal-user {
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .modal-user:hover {
+      border-color: #0a2540;
+      background: #f0f7ff;
+    }
+
+    .modal-user-name { font-weight: 600; color: #0a2540; }
+    .modal-user-desc { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+    .modal-close {
+      text-align: right;
+      margin-top: 16px;
+    }
+
+    .modal-close button {
+      background: #e5e7eb;
+      color: #1f2937;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .modal-close button:hover { background: #d1d5db; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Plaid Integration Demo</h1>
+  <p>Connect a test bank account to view financial data</p>
+</header>
+
+<!-- Connect Card -->
+<div class="card" id="connectCard">
+  <h2>Connect a Bank Account</h2>
+  <div class="mode-badge">
+    <strong>Mode:</strong> 📚 Mock Data (No Backend Needed)
+  </div>
+  <button id="connectBtn">Connect with Plaid</button>
+  <p class="status" id="connectStatus"></p>
+</div>
+
+<!-- Data Card -->
+<div class="card" id="dataSection">
+  <h2>Your Financial Data <span class="badge" id="institutionBadge"></span></h2>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('accounts')">Accounts</button>
+    <button class="tab" onclick="showTab('transactions')">Transactions</button>
+    <button class="tab" onclick="showTab('auth')">Routing Info</button>
+  </div>
+
+  <div id="accountsTab"></div>
+  <div id="transactionsTab" style="display:none"></div>
+  <div id="authTab" style="display:none"></div>
+</div>
+
+<!-- Modal for selecting test account -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Select a Test Account</h3>
+    <div id="userList"></div>
+    <div class="modal-close">
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mock data based on Plaid test institutions
+  const mockData = {
+    user_good: {
+      institution: 'Chase',
+      accounts: [
+        {
+          account_id: 'acc_001',
+          name: 'Checking Account',
+          official_name: 'Chase Total Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '1234',
+          balances: {
+            available: 5250.50,
+            current: 5500.00,
+          },
+        },
+        {
+          account_id: 'acc_002',
+          name: 'Savings Account',
+          official_name: 'Chase Savings',
+          type: 'depository',
+          subtype: 'savings',
+          mask: '5678',
+          balances: {
+            available: 12000.00,
+            current: 12000.00,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Starbucks Coffee', merchant_name: 'Starbucks', date: '2024-05-06', amount: 5.45 },
+        { name: 'Whole Foods', merchant_name: 'Whole Foods Market', date: '2024-05-05', amount: 78.23 },
+        { name: 'Netflix Subscription', merchant_name: 'Netflix', date: '2024-05-04', amount: 15.99 },
+        { name: 'Shell Gas Station', merchant_name: 'Shell Oil', date: '2024-05-03', amount: 45.00 },
+        { name: 'Amazon Purchase', merchant_name: 'Amazon.com', date: '2024-05-02', amount: 32.99 },
+        { name: 'Chipotle', merchant_name: 'Chipotle Mexican Grill', date: '2024-05-01', amount: 12.50 },
+        { name: 'Paycheck Deposit', merchant_name: 'Employer Inc', date: '2024-04-30', amount: -2500.00 },
+        { name: 'Rent Payment', merchant_name: 'Landlord LLC', date: '2024-04-28', amount: 1500.00 },
+      ],
+      auth: [
+        { account_id: 'acc_001', routing: '021000021', account: 'xxxx1234' },
+        { account_id: 'acc_002', routing: '021000021', account: 'xxxx5678' },
+      ],
+    },
+    user_multi_account: {
+      institution: 'Bank of America',
+      accounts: [
+        {
+          account_id: 'acc_101',
+          name: 'Checking',
+          official_name: 'BofA Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '0001',
+          balances: {
+            available: 25000,
+            current: 25000,
+          },
+        },
+        {
+          account_id: 'acc_102',
+          name: 'Savings',
+          official_name: 'BofA Premium Savings',
+          type: 'depository',
+          subtype: 'savings',
+          mask: '0002',
+          balances: {
+            available: 100000,
+            current: 100000,
+          },
+        },
+        {
+          account_id: 'acc_103',
+          name: 'Credit Card',
+          official_name: 'BofA Travel Card',
+          type: 'credit',
+          subtype: 'credit card',
+          mask: '0003',
+          balances: {
+            available: 50000,
+            current: 12500,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Office Supplies', merchant_name: 'Staples', date: '2024-05-06', amount: 125.99 },
+        { name: 'Internet Service', merchant_name: 'Comcast', date: '2024-05-05', amount: 89.99 },
+        { name: 'Software License', merchant_name: 'Adobe', date: '2024-05-04', amount: 599.99 },
+        { name: 'Client Refund', merchant_name: 'Client Corp', date: '2024-05-03', amount: -500.00 },
+      ],
+      auth: [
+        { account_id: 'acc_101', routing: '026009593', account: 'xxxx0001' },
+        { account_id: 'acc_102', routing: '026009593', account: 'xxxx0002' },
+        { account_id: 'acc_103', routing: '026009593', account: 'xxxx0003' },
+      ],
+    },
+    user_wells: {
+      institution: 'Wells Fargo',
+      accounts: [
+        {
+          account_id: 'acc_201',
+          name: 'Checking',
+          official_name: 'Wells Fargo Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '4567',
+          balances: {
+            available: 8750.25,
+            current: 9000.00,
+          },
+        },
+        {
+          account_id: 'acc_202',
+          name: 'Money Market',
+          official_name: 'Wells Fargo Money Market',
+          type: 'depository',
+          subtype: 'money market',
+          mask: '8901',
+          balances: {
+            available: 50000,
+            current: 50000,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Whole Foods', merchant_name: 'Whole Foods', date: '2024-05-06', amount: 125.43 },
+        { name: 'Best Buy', merchant_name: 'Best Buy', date: '2024-05-05', amount: 349.99 },
+        { name: 'Walgreens', merchant_name: 'Walgreens', date: '2024-05-04', amount: 32.12 },
+        { name: 'Gas Station', merchant_name: 'Chevron', date: '2024-05-03', amount: 55.00 },
+        { name: 'Salary Deposit', merchant_name: 'Employer ABC', date: '2024-05-01', amount: -3000.00 },
+      ],
+      auth: [
+        { account_id: 'acc_201', routing: '121000248', account: 'xxxx4567' },
+        { account_id: 'acc_202', routing: '121000248', account: 'xxxx8901' },
+      ],
+    },
+    user_citi: {
+      institution: 'Citibank',
+      accounts: [
+        {
+          account_id: 'acc_301',
+          name: 'Premium Checking',
+          official_name: 'Citi Premium Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '2468',
+          balances: {
+            available: 15500,
+            current: 16000,
+          },
+        },
+        {
+          account_id: 'acc_302',
+          name: 'Credit Card',
+          official_name: 'Citi Prestige Card',
+          type: 'credit',
+          subtype: 'credit card',
+          mask: '1357',
+          balances: {
+            available: 25000,
+            current: 8745.32,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Uber', merchant_name: 'Uber', date: '2024-05-06', amount: 24.50 },
+        { name: 'Hilton Hotels', merchant_name: 'Hilton Hotels', date: '2024-05-05', amount: 450.00 },
+        { name: 'Delta Airlines', merchant_name: 'Delta Airlines', date: '2024-05-04', amount: 825.00 },
+        { name: 'Restaurant', merchant_name: 'Nobu Restaurant', date: '2024-05-03', amount: 185.75 },
+        { name: 'Monthly Charge', merchant_name: 'Citi Card Fee', date: '2024-05-02', amount: 0.00 },
+      ],
+      auth: [
+        { account_id: 'acc_301', routing: '021101108', account: 'xxxx2468' },
+        { account_id: 'acc_302', routing: '021101108', account: 'xxxx1357' },
+      ],
+    },
+    user_empty_transactions: {
+      institution: 'US Bank',
+      accounts: [
+        {
+          account_id: 'acc_401',
+          name: 'Savings Account',
+          official_name: 'US Bank Savings',
+          type: 'depository',
+          subtype: 'savings',
+          mask: '7890',
+          balances: {
+            available: 35000,
+            current: 35000,
+          },
+        },
+      ],
+      transactions: [],
+      auth: [
+        { account_id: 'acc_401', routing: '091000019', account: 'xxxx7890' },
+      ],
+    },
+    user_custom_login: {
+      institution: 'Capital One',
+      accounts: [
+        {
+          account_id: 'acc_501',
+          name: 'Money Market',
+          official_name: 'Capital One Money Market',
+          type: 'depository',
+          subtype: 'money market',
+          mask: '3579',
+          balances: {
+            available: 75000,
+            current: 75000,
+          },
+        },
+        {
+          account_id: 'acc_502',
+          name: '360 Checking',
+          official_name: 'Capital One 360 Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '2468',
+          balances: {
+            available: 12500.75,
+            current: 13000.00,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Transfer Out', merchant_name: 'ACH Transfer', date: '2024-05-06', amount: 1000.00 },
+        { name: 'Dividend', merchant_name: 'Capital One Interest', date: '2024-05-05', amount: -150.00 },
+        { name: 'ATM Withdrawal', merchant_name: 'ATM Withdrawal', date: '2024-05-04', amount: 200.00 },
+        { name: 'Direct Deposit', merchant_name: 'Salary', date: '2024-05-01', amount: -2750.50 },
+      ],
+      auth: [
+        { account_id: 'acc_501', routing: '051000017', account: 'xxxx3579' },
+        { account_id: 'acc_502', routing: '051000017', account: 'xxxx2468' },
+      ],
+    },
+  };
+
+  let currentUser = null;
+
+  document.getElementById('connectBtn').addEventListener('click', showModal);
+
+  function showModal() {
+    const modal = document.getElementById('modal');
+    const userList = document.getElementById('userList');
+
+    userList.innerHTML = Object.entries(mockData).map(([username, data]) => `
+      <div class="modal-user" onclick="selectUser('${username}')">
+        <div class="modal-user-name">${username}</div>
+        <div class="modal-user-desc">
+          ${data.institution} • ${data.accounts.length} account${data.accounts.length > 1 ? 's' : ''}
+        </div>
+      </div>
+    `).join('');
+
+    modal.classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  }
+
+  function selectUser(username) {
+    currentUser = username;
+    closeModal();
+
+    const data = mockData[username];
+    document.getElementById('connectCard').style.display = 'none';
+    document.getElementById('dataSection').style.display = 'block';
+    document.getElementById('institutionBadge').textContent = data.institution;
+
+    loadAccounts();
+    loadTransactions();
+    loadAuth();
+  }
+
+  function loadAccounts() {
+    const data = mockData[currentUser];
+    const el = document.getElementById('accountsTab');
+
+    el.innerHTML = data.accounts.map(a => `
+      <div class="account-item">
+        <div>
+          <div class="account-name">${a.name}</div>
+          <div class="account-meta">${a.official_name || ''} • ••••${a.mask}</div>
+        </div>
+        <div class="account-balance">
+          <div class="balance-current">$${(a.balances.current ?? 0).toFixed(2)}</div>
+          ${a.balances.available != null
+            ? `<div class="balance-available">Available: $${a.balances.available.toFixed(2)}</div>`
+            : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadTransactions() {
+    const data = mockData[currentUser];
+    const el = document.getElementById('transactionsTab');
+
+    el.innerHTML = data.transactions.map(t => `
+      <div class="tx-item">
+        <div>
+          <div class="tx-name">${t.merchant_name || t.name}</div>
+          <div class="tx-date">${t.date}</div>
+        </div>
+        <div class="tx-amount ${t.amount > 0 ? 'debit' : 'credit'}">
+          ${t.amount > 0 ? '-' : '+'}$${Math.abs(t.amount).toFixed(2)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadAuth() {
+    const data = mockData[currentUser];
+    const el = document.getElementById('authTab');
+
+    el.innerHTML = data.auth.map(n => {
+      const acct = data.accounts.find(a => a.account_id === n.account_id);
+      return `
+        <div class="auth-item">
+          <strong>${acct?.name || 'Account'} (••••${acct?.mask || ''})</strong>
+          <span>Routing: ${n.routing}</span><br/>
+          <span>Account: ••••${n.account.slice(-4)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function showTab(name) {
+    ['accounts', 'transactions', 'auth'].forEach(t => {
+      document.getElementById(`${t}Tab`).style.display = t === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tab').forEach((btn, i) => {
+      btn.classList.toggle('active', ['accounts', 'transactions', 'auth'][i] === name);
+    });
+  }
+</script>
+
+</body>
+</html>
