@@ -298,7 +298,7 @@
 </div>
 
 <script>
-  // Mock data
+  // Mock data based on Plaid test institutions
   const mockData = {
     user_good: {
       institution: 'Chase',
@@ -306,7 +306,7 @@
         {
           account_id: 'acc_001',
           name: 'Checking Account',
-          official_name: 'Premium Checking',
+          official_name: 'Chase Total Checking',
           type: 'depository',
           subtype: 'checking',
           mask: '1234',
@@ -318,7 +318,7 @@
         {
           account_id: 'acc_002',
           name: 'Savings Account',
-          official_name: 'High Yield Savings',
+          official_name: 'Chase Savings',
           type: 'depository',
           subtype: 'savings',
           mask: '5678',
@@ -349,7 +349,7 @@
         {
           account_id: 'acc_101',
           name: 'Checking',
-          official_name: 'Business Checking',
+          official_name: 'BofA Checking',
           type: 'depository',
           subtype: 'checking',
           mask: '0001',
@@ -361,7 +361,7 @@
         {
           account_id: 'acc_102',
           name: 'Savings',
-          official_name: 'Business Savings',
+          official_name: 'BofA Premium Savings',
           type: 'depository',
           subtype: 'savings',
           mask: '0002',
@@ -373,7 +373,7 @@
         {
           account_id: 'acc_103',
           name: 'Credit Card',
-          official_name: 'Business Credit Card',
+          official_name: 'BofA Travel Card',
           type: 'credit',
           subtype: 'credit card',
           mask: '0003',
@@ -390,9 +390,149 @@
         { name: 'Client Refund', merchant_name: 'Client Corp', date: '2024-05-03', amount: -500.00 },
       ],
       auth: [
-        { account_id: 'acc_101', routing: '021000021', account: 'xxxx0001' },
-        { account_id: 'acc_102', routing: '021000021', account: 'xxxx0002' },
-        { account_id: 'acc_103', routing: '021000021', account: 'xxxx0003' },
+        { account_id: 'acc_101', routing: '026009593', account: 'xxxx0001' },
+        { account_id: 'acc_102', routing: '026009593', account: 'xxxx0002' },
+        { account_id: 'acc_103', routing: '026009593', account: 'xxxx0003' },
+      ],
+    },
+    user_wells: {
+      institution: 'Wells Fargo',
+      accounts: [
+        {
+          account_id: 'acc_201',
+          name: 'Checking',
+          official_name: 'Wells Fargo Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '4567',
+          balances: {
+            available: 8750.25,
+            current: 9000.00,
+          },
+        },
+        {
+          account_id: 'acc_202',
+          name: 'Money Market',
+          official_name: 'Wells Fargo Money Market',
+          type: 'depository',
+          subtype: 'money market',
+          mask: '8901',
+          balances: {
+            available: 50000,
+            current: 50000,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Whole Foods', merchant_name: 'Whole Foods', date: '2024-05-06', amount: 125.43 },
+        { name: 'Best Buy', merchant_name: 'Best Buy', date: '2024-05-05', amount: 349.99 },
+        { name: 'Walgreens', merchant_name: 'Walgreens', date: '2024-05-04', amount: 32.12 },
+        { name: 'Gas Station', merchant_name: 'Chevron', date: '2024-05-03', amount: 55.00 },
+        { name: 'Salary Deposit', merchant_name: 'Employer ABC', date: '2024-05-01', amount: -3000.00 },
+      ],
+      auth: [
+        { account_id: 'acc_201', routing: '121000248', account: 'xxxx4567' },
+        { account_id: 'acc_202', routing: '121000248', account: 'xxxx8901' },
+      ],
+    },
+    user_citi: {
+      institution: 'Citibank',
+      accounts: [
+        {
+          account_id: 'acc_301',
+          name: 'Premium Checking',
+          official_name: 'Citi Premium Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '2468',
+          balances: {
+            available: 15500,
+            current: 16000,
+          },
+        },
+        {
+          account_id: 'acc_302',
+          name: 'Credit Card',
+          official_name: 'Citi Prestige Card',
+          type: 'credit',
+          subtype: 'credit card',
+          mask: '1357',
+          balances: {
+            available: 25000,
+            current: 8745.32,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Uber', merchant_name: 'Uber', date: '2024-05-06', amount: 24.50 },
+        { name: 'Hilton Hotels', merchant_name: 'Hilton Hotels', date: '2024-05-05', amount: 450.00 },
+        { name: 'Delta Airlines', merchant_name: 'Delta Airlines', date: '2024-05-04', amount: 825.00 },
+        { name: 'Restaurant', merchant_name: 'Nobu Restaurant', date: '2024-05-03', amount: 185.75 },
+        { name: 'Monthly Charge', merchant_name: 'Citi Card Fee', date: '2024-05-02', amount: 0.00 },
+      ],
+      auth: [
+        { account_id: 'acc_301', routing: '021101108', account: 'xxxx2468' },
+        { account_id: 'acc_302', routing: '021101108', account: 'xxxx1357' },
+      ],
+    },
+    user_empty_transactions: {
+      institution: 'US Bank',
+      accounts: [
+        {
+          account_id: 'acc_401',
+          name: 'Savings Account',
+          official_name: 'US Bank Savings',
+          type: 'depository',
+          subtype: 'savings',
+          mask: '7890',
+          balances: {
+            available: 35000,
+            current: 35000,
+          },
+        },
+      ],
+      transactions: [],
+      auth: [
+        { account_id: 'acc_401', routing: '091000019', account: 'xxxx7890' },
+      ],
+    },
+    user_custom_login: {
+      institution: 'Capital One',
+      accounts: [
+        {
+          account_id: 'acc_501',
+          name: 'Money Market',
+          official_name: 'Capital One Money Market',
+          type: 'depository',
+          subtype: 'money market',
+          mask: '3579',
+          balances: {
+            available: 75000,
+            current: 75000,
+          },
+        },
+        {
+          account_id: 'acc_502',
+          name: '360 Checking',
+          official_name: 'Capital One 360 Checking',
+          type: 'depository',
+          subtype: 'checking',
+          mask: '2468',
+          balances: {
+            available: 12500.75,
+            current: 13000.00,
+          },
+        },
+      ],
+      transactions: [
+        { name: 'Transfer Out', merchant_name: 'ACH Transfer', date: '2024-05-06', amount: 1000.00 },
+        { name: 'Dividend', merchant_name: 'Capital One Interest', date: '2024-05-05', amount: -150.00 },
+        { name: 'ATM Withdrawal', merchant_name: 'ATM Withdrawal', date: '2024-05-04', amount: 200.00 },
+        { name: 'Direct Deposit', merchant_name: 'Salary', date: '2024-05-01', amount: -2750.50 },
+      ],
+      auth: [
+        { account_id: 'acc_501', routing: '051000017', account: 'xxxx3579' },
+        { account_id: 'acc_502', routing: '051000017', account: 'xxxx2468' },
       ],
     },
   };
