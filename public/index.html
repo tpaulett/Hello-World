@@ -217,6 +217,50 @@
   const API = 'http://localhost:3000';
   let accessToken = null;
   let isMockMode = false;
+  let serverReachable = false;
+
+  // Embedded mock data — used when server is unreachable
+  const embeddedMockData = {
+    user_good: {
+      institution: 'Chase',
+      accounts: [
+        { account_id: 'acc_001', name: 'Checking Account', official_name: 'Chase Total Checking', mask: '1234', balances: { available: 5250.50, current: 5500.00 } },
+        { account_id: 'acc_002', name: 'Savings Account', official_name: 'Chase Savings', mask: '5678', balances: { available: 12000.00, current: 12000.00 } },
+      ],
+      transactions: [
+        { merchant_name: 'Starbucks', date: '2024-05-06', amount: 5.45 },
+        { merchant_name: 'Whole Foods Market', date: '2024-05-05', amount: 78.23 },
+        { merchant_name: 'Netflix', date: '2024-05-04', amount: 15.99 },
+        { merchant_name: 'Shell Oil', date: '2024-05-03', amount: 45.00 },
+        { merchant_name: 'Amazon.com', date: '2024-05-02', amount: 32.99 },
+        { merchant_name: 'Employer Inc', date: '2024-04-30', amount: -2500.00 },
+        { merchant_name: 'Landlord LLC', date: '2024-04-28', amount: 1500.00 },
+      ],
+      auth: [
+        { account_id: 'acc_001', routing: '021000021', account: 'xxxx1234' },
+        { account_id: 'acc_002', routing: '021000021', account: 'xxxx5678' },
+      ],
+    },
+    user_multi_account: {
+      institution: 'Bank of America',
+      accounts: [
+        { account_id: 'acc_101', name: 'Checking', official_name: 'BofA Checking', mask: '0001', balances: { available: 25000, current: 25000 } },
+        { account_id: 'acc_102', name: 'Savings', official_name: 'BofA Premium Savings', mask: '0002', balances: { available: 100000, current: 100000 } },
+        { account_id: 'acc_103', name: 'Credit Card', official_name: 'BofA Travel Card', mask: '0003', balances: { available: 50000, current: 12500 } },
+      ],
+      transactions: [
+        { merchant_name: 'Staples', date: '2024-05-06', amount: 125.99 },
+        { merchant_name: 'Comcast', date: '2024-05-05', amount: 89.99 },
+        { merchant_name: 'Adobe', date: '2024-05-04', amount: 599.99 },
+        { merchant_name: 'Client Corp', date: '2024-05-03', amount: -500.00 },
+      ],
+      auth: [
+        { account_id: 'acc_101', routing: '026009593', account: 'xxxx0001' },
+        { account_id: 'acc_102', routing: '026009593', account: 'xxxx0002' },
+        { account_id: 'acc_103', routing: '026009593', account: 'xxxx0003' },
+      ],
+    },
+  };
 
   async function checkMode() {
     const label = document.getElementById('modeLabel');
@@ -224,12 +268,14 @@
     try {
       const res = await fetch(`${API}/health`);
       const data = await res.json();
+      serverReachable = true;
       isMockMode = data.mode === 'mock';
       label.textContent = isMockMode ? 'Mock Mode (Test Data)' : 'Production Mode (Real API)';
     } catch (e) {
-      // Server unreachable — default to mock so the button still works
+      // Server unreachable — use embedded mock data, no server calls needed
+      serverReachable = false;
       isMockMode = true;
-      label.textContent = 'Mock Mode (server offline — check npm start)';
+      label.textContent = 'Mock Mode (offline — using embedded test data)';
       label.style.color = '#b45309';
     } finally {
       btn.disabled = false;
@@ -249,25 +295,35 @@
   async function handleMockConnect() {
     setStatus('connectStatus', 'Loading test accounts...', '');
     try {
-      const res = await fetch(`${API}/mock-users`);
-      const users = await res.json();
+      let users;
+
+      if (serverReachable) {
+        const res = await fetch(`${API}/mock-users`);
+        users = await res.json();
+      } else {
+        // Server offline — build user list from embedded data
+        users = Object.keys(embeddedMockData).map(username => ({
+          username,
+          description: embeddedMockData[username].institution,
+        }));
+      }
 
       const username = prompt(
         'Select a test account:\n\n' +
-        users.map(u => `${u.username}\n  ${u.description}`).join('\n\n') +
+        users.map(u => `${u.username}  (${u.description})`).join('\n') +
         '\n\nEnter username:',
         users[0]?.username
       );
 
-      if (!username) return;
+      if (!username) { setStatus('connectStatus', '', ''); return; }
 
-      const user = users.find(u => u.username === username);
-      if (!user) {
-        setStatus('connectStatus', 'Invalid username', 'error');
+      const valid = users.find(u => u.username === username.trim());
+      if (!valid) {
+        setStatus('connectStatus', `Unknown username "${username}"`, 'error');
         return;
       }
 
-      await mockLogin(username);
+      await mockLogin(username.trim());
     } catch (e) {
       setStatus('connectStatus', `Error: ${e.message}`, 'error');
     }
@@ -276,19 +332,78 @@
   async function mockLogin(username) {
     setStatus('connectStatus', `Connecting as ${username}...`, '');
     try {
-      const res = await fetch(`${API}/exchange-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ public_token: `public-mock-${username}`, userId: username }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      accessToken = data.access_token;
-      setStatus('connectStatus', `Connected as ${username}!`, 'success');
-      loadData(username);
+      if (serverReachable) {
+        const res = await fetch(`${API}/exchange-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_token: `public-mock-${username}`, userId: username }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        accessToken = data.access_token;
+        setStatus('connectStatus', `Connected as ${username}!`, 'success');
+        loadData(username);
+      } else {
+        // Server offline — render directly from embedded mock data
+        const data = embeddedMockData[username];
+        if (!data) throw new Error(`No mock data for "${username}"`);
+        setStatus('connectStatus', `Connected as ${username}!`, 'success');
+        renderEmbeddedData(username, data);
+      }
     } catch (e) {
       setStatus('connectStatus', `Error: ${e.message}`, 'error');
     }
+  }
+
+  function renderEmbeddedData(username, data) {
+    document.getElementById('dataSection').style.display = 'block';
+    document.getElementById('institutionBadge').textContent = data.institution;
+
+    // Accounts
+    const accEl = document.getElementById('accountsTab');
+    accEl.innerHTML = data.accounts.map(a => `
+      <div class="account-item">
+        <div>
+          <div class="account-name">${a.name}</div>
+          <div class="account-meta">${a.official_name} &bull; ••••${a.mask}</div>
+        </div>
+        <div class="account-balance">
+          <div class="balance-current">$${a.balances.current.toFixed(2)}</div>
+          ${a.balances.available != null ? `<div class="balance-available">Available: $${a.balances.available.toFixed(2)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    // Transactions
+    const txEl = document.getElementById('transactionsTab');
+    if (!data.transactions.length) {
+      txEl.innerHTML = '<p class="empty">No transactions found.</p>';
+    } else {
+      txEl.innerHTML = data.transactions.map(t => `
+        <div class="tx-item">
+          <div>
+            <div class="tx-name">${t.merchant_name || t.name}</div>
+            <div class="tx-date">${t.date}</div>
+          </div>
+          <div class="tx-amount ${t.amount > 0 ? 'debit' : 'credit'}">
+            ${t.amount > 0 ? '-' : '+'}$${Math.abs(t.amount).toFixed(2)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Auth
+    const authEl = document.getElementById('authTab');
+    authEl.innerHTML = data.auth.map(n => {
+      const acct = data.accounts.find(a => a.account_id === n.account_id);
+      return `
+        <div class="auth-item">
+          <strong>${acct?.name || 'Account'} (••••${acct?.mask || ''})</strong>
+          <span>Routing: ${n.routing}</span><br/>
+          <span>Account: ••••${n.account.slice(-4)}</span>
+        </div>
+      `;
+    }).join('');
   }
 
   function handleRealConnect() {
