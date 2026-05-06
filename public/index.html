@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plaid Integration</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+      color: #1a1a1a;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0a2540;
+    }
+
+    header p {
+      color: #6b7280;
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 640px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0a2540;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h2 .badge {
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 24px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #connectBtn {
+      background: #0a2540;
+      color: white;
+      width: 100%;
+    }
+
+    #connectBtn:hover:not(:disabled) { background: #1a3a5c; }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      background: #f0f4f8;
+      color: #6b7280;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      background: #0a2540;
+      color: white;
+    }
+
+    .tab:hover:not(.active) { background: #e0e7ef; }
+
+    .account-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .account-item:last-child { border-bottom: none; }
+
+    .account-name { font-weight: 500; font-size: 14px; }
+    .account-meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+    .account-balance {
+      text-align: right;
+    }
+
+    .balance-current { font-weight: 600; font-size: 15px; }
+    .balance-available { font-size: 12px; color: #9ca3af; }
+
+    .tx-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .tx-item:last-child { border-bottom: none; }
+
+    .tx-name { font-size: 13px; font-weight: 500; }
+    .tx-date { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+    .tx-amount {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tx-amount.debit { color: #ef4444; }
+    .tx-amount.credit { color: #22c55e; }
+
+    .auth-item {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .auth-item strong { display: block; font-size: 14px; margin-bottom: 6px; }
+    .auth-item span { color: #6b7280; }
+
+    .empty {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    .status {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    .status.error { color: #ef4444; }
+    .status.success { color: #22c55e; }
+
+    #dataSection { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Plaid Integration</h1>
+  <p>Connect your bank account to view financial data</p>
+</header>
+
+<!-- Connect Card -->
+<div class="card" id="connectCard">
+  <h2>Connect a Bank Account</h2>
+  <button id="connectBtn">Connect with Plaid</button>
+  <p class="status" id="connectStatus"></p>
+</div>
+
+<!-- Data Card -->
+<div class="card" id="dataSection">
+  <h2>Your Financial Data <span class="badge" id="institutionBadge"></span></h2>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('accounts')">Accounts</button>
+    <button class="tab" onclick="showTab('transactions')">Transactions</button>
+    <button class="tab" onclick="showTab('auth')">Routing Info</button>
+  </div>
+
+  <div id="accountsTab"></div>
+  <div id="transactionsTab" style="display:none"></div>
+  <div id="authTab" style="display:none"></div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+  let accessToken = null;
+
+  document.getElementById('connectBtn').addEventListener('click', async () => {
+    setStatus('connectStatus', 'Creating link token...', '');
+    try {
+      const res = await fetch(`${API}/create-link-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 'demo-user' }),
+      });
+      const { link_token, error } = await res.json();
+      if (error) throw new Error(error);
+      openPlaidLink(link_token);
+    } catch (e) {
+      setStatus('connectStatus', `Error: ${e.message}`, 'error');
+    }
+  });
+
+  function openPlaidLink(linkToken) {
+    const handler = Plaid.create({
+      token: linkToken,
+      onSuccess: async (publicToken, metadata) => {
+        setStatus('connectStatus', 'Exchanging token...', '');
+        try {
+          const res = await fetch(`${API}/exchange-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ public_token: publicToken, userId: 'demo-user' }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          accessToken = data.access_token;
+          setStatus('connectStatus', 'Connected!', 'success');
+          loadData(metadata.institution?.name);
+        } catch (e) {
+          setStatus('connectStatus', `Error: ${e.message}`, 'error');
+        }
+      },
+      onExit: (err) => {
+        if (err) setStatus('connectStatus', `Exited: ${err.display_message || err.error_message}`, 'error');
+      },
+    });
+    handler.open();
+  }
+
+  async function loadData(institutionName) {
+    document.getElementById('dataSection').style.display = 'block';
+    if (institutionName) document.getElementById('institutionBadge').textContent = institutionName;
+
+    await Promise.all([loadAccounts(), loadTransactions(), loadAuth()]);
+  }
+
+  async function loadAccounts() {
+    try {
+      const res = await fetch(`${API}/get-accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const { accounts, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const el = document.getElementById('accountsTab');
+      if (!accounts.length) { el.innerHTML = '<p class="empty">No accounts found.</p>'; return; }
+
+      el.innerHTML = accounts.map(a => `
+        <div class="account-item">
+          <div>
+            <div class="account-name">${a.name}</div>
+            <div class="account-meta">${a.official_name || ''} &bull; ••••${a.mask}</div>
+          </div>
+          <div class="account-balance">
+            <div class="balance-current">$${(a.balances.current ?? 0).toFixed(2)}</div>
+            ${a.balances.available != null
+              ? `<div class="balance-available">Available: $${a.balances.available.toFixed(2)}</div>`
+              : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('accountsTab').innerHTML = `<p class="empty" style="color:#ef4444">${e.message}</p>`;
+    }
+  }
+
+  async function loadTransactions() {
+    try {
+      const end = new Date().toISOString().split('T')[0];
+      const start = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+
+      const res = await fetch(`${API}/get-transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken, start_date: start, end_date: end }),
+      });
+      const { transactions, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const el = document.getElementById('transactionsTab');
+      if (!transactions.length) { el.innerHTML = '<p class="empty">No transactions in the last 30 days.</p>'; return; }
+
+      el.innerHTML = transactions.slice(0, 20).map(t => `
+        <div class="tx-item">
+          <div>
+            <div class="tx-name">${t.merchant_name || t.name}</div>
+            <div class="tx-date">${t.date}</div>
+          </div>
+          <div class="tx-amount ${t.amount > 0 ? 'debit' : 'credit'}">
+            ${t.amount > 0 ? '-' : '+'}$${Math.abs(t.amount).toFixed(2)}
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('transactionsTab').innerHTML = `<p class="empty" style="color:#ef4444">${e.message}</p>`;
+    }
+  }
+
+  async function loadAuth() {
+    try {
+      const res = await fetch(`${API}/get-auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const { numbers, accounts, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const ach = numbers?.ach || [];
+      const el = document.getElementById('authTab');
+      if (!ach.length) { el.innerHTML = '<p class="empty">No ACH numbers available.</p>'; return; }
+
+      el.innerHTML = ach.map(n => {
+        const acct = accounts.find(a => a.account_id === n.account_id);
+        return `
+          <div class="auth-item">
+            <strong>${acct?.name || 'Account'} (••••${acct?.mask || ''})</strong>
+            <span>Routing: ${n.routing}</span><br/>
+            <span>Account: ••••${n.account.slice(-4)}</span>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      document.getElementById('authTab').innerHTML = `<p class="empty" style="color:#ef4444">${e.message}</p>`;
+    }
+  }
+
+  function showTab(name) {
+    ['accounts', 'transactions', 'auth'].forEach(t => {
+      document.getElementById(`${t}Tab`).style.display = t === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tab').forEach((btn, i) => {
+      btn.classList.toggle('active', ['accounts', 'transactions', 'auth'][i] === name);
+    });
+  }
+
+  function setStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `status ${type}`;
+  }
+</script>
+
+</body>
+</html>
