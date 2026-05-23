@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colorado Hiking Trails</title>
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --blue: #1e6091;
+    --blue-pale: #d0e8f2;
+    --orange: #e76f51;
+    --yellow: #f4a261;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, var(--green) 0%, #1b4332 100%);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-lg);
+  }
+  header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.3px; }
+  header p { font-size: .875rem; opacity: .8; margin-top: 2px; }
+  .header-icon { font-size: 2rem; }
+
+  /* Stats bar */
+  .stats-bar {
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 14px 32px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .stat { display: flex; align-items: center; gap: 8px; }
+  .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--green); }
+  .stat-label { font-size: .8rem; color: var(--gray-600); text-transform: uppercase; letter-spacing: .5px; }
+  .stat-divider { width: 1px; background: var(--gray-200); align-self: stretch; }
+
+  /* Toolbar */
+  .toolbar {
+    padding: 16px 32px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
+  .search-wrap input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .search-wrap input:focus { border-color: var(--green-light); }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400); font-size: .9rem; pointer-events: none;
+  }
+  select, .btn {
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    font-size: .875rem;
+    cursor: pointer;
+    background: white;
+    color: var(--gray-800);
+    outline: none;
+    transition: all .15s;
+  }
+  select:focus { border-color: var(--green-light); }
+  .btn { font-weight: 500; }
+  .btn-primary {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+  }
+  .btn-primary:hover { background: #1b4332; }
+  .btn:hover:not(.btn-primary) { background: var(--gray-100); }
+  .btn-danger { color: #dc2626; border-color: #fca5a5; }
+  .btn-danger:hover { background: #fff1f1; }
+  .filter-label { font-size: .8rem; color: var(--gray-600); font-weight: 600; white-space: nowrap; }
+  .toolbar-spacer { flex: 1; }
+
+  /* Table */
+  .table-wrap {
+    margin: 16px 32px;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  thead th {
+    background: var(--gray-50);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--gray-600);
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--green); }
+  thead th.sorted { color: var(--green); }
+  thead th .sort-icon { margin-left: 4px; opacity: .5; }
+  thead th.sorted .sort-icon { opacity: 1; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--gray-100);
+    transition: background .1s;
+  }
+  tbody tr:hover { background: var(--gray-50); }
+  tbody tr.completed-row td { opacity: .55; }
+  tbody tr.completed-row td:first-child { opacity: 1; }
+
+  td { padding: 10px 14px; vertical-align: middle; }
+
+  /* Difficulty badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .badge-easy { background: var(--green-pale); color: var(--green); }
+  .badge-moderate { background: #fef3c7; color: #92400e; }
+  .badge-hard { background: #fee2e2; color: #991b1b; }
+
+  /* Lake icon */
+  .lake-yes { color: var(--blue); }
+  .lake-no { color: var(--gray-400); }
+
+  /* Completed checkbox */
+  .check-col { width: 40px; text-align: center; }
+  .complete-toggle {
+    width: 18px; height: 18px;
+    cursor: pointer;
+    accent-color: var(--green);
+  }
+
+  /* Actions */
+  .actions { display: flex; gap: 6px; }
+  .btn-icon {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    cursor: pointer;
+    font-size: .8rem;
+    transition: all .15s;
+  }
+  .btn-icon:hover { background: var(--gray-100); }
+  .btn-icon.edit:hover { color: var(--blue); border-color: #bfdbfe; background: #eff6ff; }
+  .btn-icon.del:hover { color: #dc2626; border-color: #fca5a5; background: #fff1f1; }
+
+  .trail-link { color: var(--blue); text-decoration: none; font-size: .75rem; }
+  .trail-link:hover { text-decoration: underline; }
+  .no-link { color: var(--gray-400); font-size: .75rem; }
+
+  .coords { font-size: .75rem; color: var(--gray-600); font-family: monospace; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray-400);
+  }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: .9rem; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    font-size: 1.2rem; color: var(--gray-400);
+    padding: 4px; line-height: 1;
+  }
+  .modal-close:hover { color: var(--gray-800); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: .8rem; font-weight: 600; color: var(--gray-600); }
+  input[type=text], input[type=number], input[type=url], textarea, select.form-select {
+    padding: 8px 10px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: .875rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select.form-select:focus { border-color: var(--green-light); }
+  textarea { resize: vertical; min-height: 70px; }
+  .checkbox-group { flex-direction: row; align-items: center; gap: 8px; padding-top: 4px; }
+  .checkbox-group input { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; }
+  .checkbox-group label { font-size: .875rem; font-weight: 400; color: var(--gray-800); cursor: pointer; }
+
+  /* Toast */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: .875rem;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn .2s ease;
+    max-width: 300px;
+  }
+  .toast.success { background: var(--green); }
+  .toast.error { background: #dc2626; }
+  @keyframes toastIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Confirm dialog */
+  .confirm-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .confirm-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .confirm-box p { font-size: .875rem; color: var(--gray-600); margin-bottom: 20px; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+
+  @media (max-width: 768px) {
+    header, .stats-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
+    .table-wrap { margin: 12px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🏔️</div>
+  <div>
+    <h1>Colorado Hiking Trails</h1>
+    <p>Track, plan, and explore your hikes</p>
+  </div>
+</header>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat"><span class="stat-value" id="statTotal">—</span><span class="stat-label">Total Trails</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat"><span class="stat-value" id="statCompleted">—</span><span class="stat-label">Completed</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat"><span class="stat-value" id="statLake">—</span><span class="stat-label">With Lake</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat"><span class="stat-value" id="statEasy" style="color:#2d6a4f">—</span><span class="stat-label">Easy</span></div>
+  <div class="stat"><span class="stat-value" id="statMod" style="color:#92400e">—</span><span class="stat-label">Moderate</span></div>
+  <div class="stat"><span class="stat-value" id="statHard" style="color:#991b1b">—</span><span class="stat-label">Hard</span></div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search trails, towns…" oninput="applyFilters()">
+  </div>
+  <span class="filter-label">Difficulty:</span>
+  <select id="filterDiff" onchange="applyFilters()">
+    <option value="">All</option>
+    <option value="Easy">Easy</option>
+    <option value="Moderate">Moderate</option>
+    <option value="Hard">Hard</option>
+  </select>
+  <span class="filter-label">Lake:</span>
+  <select id="filterLake" onchange="applyFilters()">
+    <option value="">All</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+  <span class="filter-label">Done:</span>
+  <select id="filterDone" onchange="applyFilters()">
+    <option value="">All</option>
+    <option value="1">Completed</option>
+    <option value="0">Not Yet</option>
+  </select>
+  <div class="toolbar-spacer"></div>
+  <button class="btn btn-primary" onclick="openModal()">+ Add Trail</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="check-col" title="Completed"></th>
+        <th onclick="sortBy('trail_name')">Trail Name <span class="sort-icon">↕</span></th>
+        <th onclick="sortBy('nearest_town')">Nearest Town <span class="sort-icon">↕</span></th>
+        <th onclick="sortBy('driving_dist')">Drive <span class="sort-icon">↕</span></th>
+        <th onclick="sortBy('difficulty')">Difficulty <span class="sort-icon">↕</span></th>
+        <th onclick="sortBy('length')">Length <span class="sort-icon">↕</span></th>
+        <th onclick="sortBy('elevation_gain')">Elev. Gain <span class="sort-icon">↕</span></th>
+        <th>Lake?</th>
+        <th>Water Feature</th>
+        <th>Coords</th>
+        <th>Link</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="trailsBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="empty-icon">🗺️</div>
+    <p>No trails match your filters.</p>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Add Trail</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="trailForm" class="form-grid">
+        <input type="hidden" id="fieldId">
+        <div class="form-group full">
+          <label for="fieldName">Trail Name *</label>
+          <input type="text" id="fieldName" required placeholder="e.g. Diamond Lake">
+        </div>
+        <div class="form-group">
+          <label for="fieldTown">Nearest Town</label>
+          <input type="text" id="fieldTown" placeholder="e.g. Nederland, CO">
+        </div>
+        <div class="form-group">
+          <label for="fieldDist">Driving Distance</label>
+          <input type="text" id="fieldDist" placeholder="e.g. ~58 mi">
+        </div>
+        <div class="form-group">
+          <label for="fieldDiff">Difficulty</label>
+          <select class="form-select" id="fieldDiff">
+            <option value="">Select…</option>
+            <option value="Easy">Easy</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="fieldLength">Length</label>
+          <input type="text" id="fieldLength" placeholder="e.g. ~5.0 mi">
+        </div>
+        <div class="form-group">
+          <label for="fieldElev">Elevation Gain</label>
+          <input type="text" id="fieldElev" placeholder="e.g. ~1,220 ft">
+        </div>
+        <div class="form-group">
+          <label for="fieldLat">Latitude</label>
+          <input type="number" id="fieldLat" step="0.0001" placeholder="e.g. 39.9602">
+        </div>
+        <div class="form-group">
+          <label for="fieldLng">Longitude</label>
+          <input type="number" id="fieldLng" step="0.0001" placeholder="e.g. -105.6322">
+        </div>
+        <div class="form-group full">
+          <label for="fieldWater">Water Feature Details</label>
+          <input type="text" id="fieldWater" placeholder="Brief description of water feature">
+        </div>
+        <div class="form-group full">
+          <label for="fieldLink">AllTrails Link</label>
+          <input type="text" id="fieldLink" placeholder="https://www.alltrails.com/trail/…">
+        </div>
+        <div class="form-group full">
+          <label for="fieldNotes">Personal Notes</label>
+          <textarea id="fieldNotes" placeholder="Parking tips, best season, what you thought…"></textarea>
+        </div>
+        <div class="form-group full checkbox-group">
+          <input type="checkbox" id="fieldLake">
+          <label for="fieldLake">Has a lake</label>
+          <input type="checkbox" id="fieldCompleted" style="margin-left:20px">
+          <label for="fieldCompleted">Completed</label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTrail()">Save Trail</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>Delete Trail?</h3>
+    <p id="confirmMsg">This cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const API = '/api';
+let trails = [];
+let sortCol = 'trail_name';
+let sortDir = 1;
+let deleteTargetId = null;
+
+async function loadStats() {
+  const s = await fetch(`${API}/stats`).then(r => r.json());
+  document.getElementById('statTotal').textContent = s.total;
+  document.getElementById('statCompleted').textContent = s.completed;
+  document.getElementById('statLake').textContent = s.withLake;
+  const easy = s.byDiff.find(d => d.difficulty === 'Easy');
+  const mod = s.byDiff.find(d => d.difficulty === 'Moderate');
+  const hard = s.byDiff.find(d => d.difficulty === 'Hard');
+  document.getElementById('statEasy').textContent = easy ? easy.c : 0;
+  document.getElementById('statMod').textContent = mod ? mod.c : 0;
+  document.getElementById('statHard').textContent = hard ? hard.c : 0;
+}
+
+async function loadTrails() {
+  const search = document.getElementById('searchInput').value;
+  const diff = document.getElementById('filterDiff').value;
+  const lake = document.getElementById('filterLake').value;
+  const done = document.getElementById('filterDone').value;
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (diff) params.set('difficulty', diff);
+  if (lake !== '') params.set('has_lake', lake);
+  if (done !== '') params.set('completed', done);
+  trails = await fetch(`${API}/trails?${params}`).then(r => r.json());
+  sortAndRender();
+}
+
+function applyFilters() { loadTrails(); }
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  sortAndRender();
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+}
+
+function sortAndRender() {
+  const sorted = [...trails].sort((a, b) => {
+    let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+    if (typeof av === 'number') return (av - bv) * sortDir;
+    return av.localeCompare(bv) * sortDir;
+  });
+  renderTable(sorted);
+}
+
+function diffBadge(d) {
+  if (!d) return '';
+  const cls = { Easy: 'badge-easy', Moderate: 'badge-moderate', Hard: 'badge-hard' };
+  return `<span class="badge ${cls[d] || ''}">${d}</span>`;
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('trailsBody');
+  const empty = document.getElementById('emptyState');
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = data.map(t => `
+    <tr class="${t.completed ? 'completed-row' : ''}" data-id="${t.id}">
+      <td class="check-col">
+        <input type="checkbox" class="complete-toggle" ${t.completed ? 'checked' : ''} onchange="toggleComplete(${t.id})" title="Mark as completed">
+      </td>
+      <td><strong>${esc(t.trail_name)}</strong>${t.notes ? `<br><small style="color:var(--gray-400)">${esc(t.notes.slice(0,60))}${t.notes.length>60?'…':''}</small>` : ''}</td>
+      <td>${esc(t.nearest_town || '—')}</td>
+      <td>${esc(t.driving_dist || '—')}</td>
+      <td>${diffBadge(t.difficulty)}</td>
+      <td>${esc(t.length || '—')}</td>
+      <td>${esc(t.elevation_gain || '—')}</td>
+      <td style="text-align:center">${t.has_lake ? '<span class="lake-yes" title="Has a lake">💧</span>' : '<span class="lake-no">—</span>'}</td>
+      <td style="max-width:200px;white-space:normal;font-size:.8rem;color:var(--gray-600)">${esc(t.water_feature_details || '')}</td>
+      <td>${t.lat && t.lng ? `<span class="coords">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span>` : '—'}</td>
+      <td>${t.alltrails_link ? `<a href="${esc(t.alltrails_link)}" target="_blank" rel="noopener" class="trail-link">AllTrails ↗</a>` : '<span class="no-link">—</span>'}</td>
+      <td>
+        <div class="actions">
+          <button class="btn-icon edit" onclick="openEdit(${t.id})" title="Edit">✏️</button>
+          <button class="btn-icon del" onclick="openDeleteConfirm(${t.id}, '${esc(t.trail_name)}')" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function toggleComplete(id) {
+  await fetch(`${API}/trails/${id}/complete`, { method: 'PATCH' });
+  await loadTrails();
+  await loadStats();
+}
+
+function openModal(trail = null) {
+  document.getElementById('modalTitle').textContent = trail ? 'Edit Trail' : 'Add Trail';
+  document.getElementById('fieldId').value = trail?.id ?? '';
+  document.getElementById('fieldName').value = trail?.trail_name ?? '';
+  document.getElementById('fieldTown').value = trail?.nearest_town ?? '';
+  document.getElementById('fieldDist').value = trail?.driving_dist ?? '';
+  document.getElementById('fieldDiff').value = trail?.difficulty ?? '';
+  document.getElementById('fieldLength').value = trail?.length ?? '';
+  document.getElementById('fieldElev').value = trail?.elevation_gain ?? '';
+  document.getElementById('fieldLat').value = trail?.lat ?? '';
+  document.getElementById('fieldLng').value = trail?.lng ?? '';
+  document.getElementById('fieldWater').value = trail?.water_feature_details ?? '';
+  document.getElementById('fieldLink').value = trail?.alltrails_link ?? '';
+  document.getElementById('fieldNotes').value = trail?.notes ?? '';
+  document.getElementById('fieldLake').checked = !!trail?.has_lake;
+  document.getElementById('fieldCompleted').checked = !!trail?.completed;
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('fieldName').focus();
+}
+
+async function openEdit(id) {
+  const trail = await fetch(`${API}/trails/${id}`).then(r => r.json());
+  openModal(trail);
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModalOnBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+async function saveTrail() {
+  const id = document.getElementById('fieldId').value;
+  const payload = {
+    trail_name: document.getElementById('fieldName').value.trim(),
+    nearest_town: document.getElementById('fieldTown').value.trim(),
+    driving_dist: document.getElementById('fieldDist').value.trim(),
+    difficulty: document.getElementById('fieldDiff').value,
+    length: document.getElementById('fieldLength').value.trim(),
+    elevation_gain: document.getElementById('fieldElev').value.trim(),
+    lat: parseFloat(document.getElementById('fieldLat').value) || null,
+    lng: parseFloat(document.getElementById('fieldLng').value) || null,
+    water_feature_details: document.getElementById('fieldWater').value.trim(),
+    alltrails_link: document.getElementById('fieldLink').value.trim(),
+    notes: document.getElementById('fieldNotes').value.trim(),
+    has_lake: document.getElementById('fieldLake').checked ? 1 : 0,
+    completed: document.getElementById('fieldCompleted').checked ? 1 : 0,
+  };
+  if (!payload.trail_name) { toast('Trail name is required', 'error'); return; }
+  const url = id ? `${API}/trails/${id}` : `${API}/trails`;
+  const method = id ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if (!res.ok) { toast('Save failed', 'error'); return; }
+  toast(id ? 'Trail updated!' : 'Trail added!', 'success');
+  closeModal();
+  await loadTrails();
+  await loadStats();
+}
+
+function openDeleteConfirm(id, name) {
+  deleteTargetId = id;
+  document.getElementById('confirmMsg').textContent = `Delete "${name}"? This cannot be undone.`;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); deleteTargetId = null; }
+async function confirmDelete() {
+  if (!deleteTargetId) return;
+  await fetch(`${API}/trails/${deleteTargetId}`, { method: 'DELETE' });
+  toast('Trail deleted', 'success');
+  closeConfirm();
+  await loadTrails();
+  await loadStats();
+}
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+});
+
+loadStats();
+loadTrails();
+</script>
+</body>
+</html>
