@@ -188,12 +188,57 @@
   .btn-icon:hover { background: var(--gray-100); }
   .btn-icon.edit:hover { color: var(--blue); border-color: #bfdbfe; background: #eff6ff; }
   .btn-icon.del:hover { color: #dc2626; border-color: #fca5a5; background: #fff1f1; }
+  .btn-icon.log:hover { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; }
 
   .trail-link { color: var(--blue); text-decoration: none; font-size: .75rem; }
   .trail-link:hover { text-decoration: underline; }
   .no-link { color: var(--gray-400); font-size: .75rem; }
 
   .coords { font-size: .75rem; color: var(--gray-600); font-family: monospace; }
+
+  /* Log chip shown under trail name */
+  .log-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .72rem; color: var(--green); margin-top: 3px;
+    font-weight: 500;
+  }
+  .log-chip .log-count {
+    background: var(--green-pale);
+    border-radius: 99px;
+    padding: 0 5px;
+    font-weight: 700;
+  }
+
+  /* Log modal specifics */
+  .log-modal { max-width: 480px; }
+  .log-trail-name { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--gray-800); }
+  .log-add-row { display: flex; gap: 8px; align-items: flex-end; }
+  .log-add-row .form-group { flex: 1; margin: 0; }
+  .log-add-row input[type=date] {
+    padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: 6px;
+    font-size: .875rem; outline: none; width: 100%; font-family: inherit;
+    transition: border-color .15s;
+  }
+  .log-add-row input[type=date]:focus { border-color: var(--green-light); }
+  .log-note-row { margin-top: 8px; }
+  .log-note-row input[type=text] { width: 100%; }
+  .log-divider { border: none; border-top: 1px solid var(--gray-200); margin: 18px 0 14px; }
+  .log-history-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); margin-bottom: 10px; }
+  .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .log-entry {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px;
+    background: var(--gray-50); border: 1px solid var(--gray-100);
+  }
+  .log-entry-date { font-weight: 600; font-size: .875rem; white-space: nowrap; }
+  .log-entry-note { font-size: .8rem; color: var(--gray-600); flex: 1; }
+  .log-entry-del {
+    background: none; border: none; cursor: pointer; color: var(--gray-400);
+    font-size: .9rem; padding: 2px 4px; border-radius: 4px; line-height: 1;
+    transition: all .15s;
+  }
+  .log-entry-del:hover { color: #dc2626; background: #fff1f1; }
+  .log-empty { font-size: .85rem; color: var(--gray-400); text-align: center; padding: 16px 0; }
 
   /* Empty state */
   .empty-state {
@@ -380,7 +425,7 @@
         <th>Water Feature</th>
         <th>Coords</th>
         <th>Link</th>
-        <th>Actions</th>
+        <th style="cursor:default">Actions</th>
       </tr>
     </thead>
     <tbody id="trailsBody"></tbody>
@@ -465,6 +510,34 @@
   </div>
 </div>
 
+<!-- Log Hike Modal -->
+<div class="modal-overlay" id="logOverlay" onclick="closeLogOnBg(event)">
+  <div class="modal log-modal">
+    <div class="modal-header">
+      <h2>📅 Log a Hike</h2>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="log-trail-name" id="logTrailName"></div>
+      <div class="log-add-row">
+        <div class="form-group">
+          <label for="logDate">Date</label>
+          <input type="date" id="logDate">
+        </div>
+        <button class="btn btn-primary" onclick="submitLog()" style="white-space:nowrap;height:36px">+ Log Hike</button>
+      </div>
+      <div class="log-note-row">
+        <input type="text" id="logNote" placeholder="Optional note (conditions, who you went with…)" maxlength="200">
+      </div>
+      <hr class="log-divider">
+      <div class="log-history-title">Past hikes</div>
+      <div class="log-list" id="logList">
+        <div class="log-empty">No hikes logged yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm Delete -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
@@ -543,12 +616,19 @@ function renderTable(data) {
   const empty = document.getElementById('emptyState');
   if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  tbody.innerHTML = data.map(t => `
+  tbody.innerHTML = data.map(t => {
+    const logChip = t.log_count > 0
+      ? `<div class="log-chip">📅 <span class="log-count">${t.log_count}×</span> ${fmtDate(t.last_hiked)}</div>`
+      : '';
+    const noteLine = t.notes
+      ? `<br><small style="color:var(--gray-400)">${esc(t.notes.slice(0,60))}${t.notes.length>60?'…':''}</small>`
+      : '';
+    return `
     <tr class="${t.completed ? 'completed-row' : ''}" data-id="${t.id}">
       <td class="check-col">
         <input type="checkbox" class="complete-toggle" ${t.completed ? 'checked' : ''} onchange="toggleComplete(${t.id})" title="Mark as completed">
       </td>
-      <td><strong>${esc(t.trail_name)}</strong>${t.notes ? `<br><small style="color:var(--gray-400)">${esc(t.notes.slice(0,60))}${t.notes.length>60?'…':''}</small>` : ''}</td>
+      <td><strong>${esc(t.trail_name)}</strong>${noteLine}${logChip}</td>
       <td>${esc(t.nearest_town || '—')}</td>
       <td>${esc(t.driving_dist || '—')}</td>
       <td>${diffBadge(t.difficulty)}</td>
@@ -560,12 +640,13 @@ function renderTable(data) {
       <td>${t.alltrails_link ? `<a href="${esc(t.alltrails_link)}" target="_blank" rel="noopener" class="trail-link">AllTrails ↗</a>` : '<span class="no-link">—</span>'}</td>
       <td>
         <div class="actions">
+          <button class="btn-icon log" onclick="openLogModal(${t.id}, '${esc(t.trail_name)}')" title="Log a hike date">📅</button>
           <button class="btn-icon edit" onclick="openEdit(${t.id})" title="Edit">✏️</button>
           <button class="btn-icon del" onclick="openDeleteConfirm(${t.id}, '${esc(t.trail_name)}')" title="Delete">🗑️</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 function esc(str) {
@@ -657,9 +738,75 @@ function toast(msg, type = '') {
   setTimeout(() => el.remove(), 3000);
 }
 
+// --- Log modal ---
+let logTrailId = null;
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  // iso is YYYY-MM-DD; parse as local date to avoid timezone shift
+  const [y, m, d] = iso.split('-');
+  return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function openLogModal(id, name) {
+  logTrailId = id;
+  document.getElementById('logTrailName').textContent = name;
+  // Default date to today
+  document.getElementById('logDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('logNote').value = '';
+  document.getElementById('logOverlay').classList.add('open');
+  await refreshLogList();
+}
+
+function closeLogModal() {
+  document.getElementById('logOverlay').classList.remove('open');
+  logTrailId = null;
+}
+function closeLogOnBg(e) { if (e.target === document.getElementById('logOverlay')) closeLogModal(); }
+
+async function refreshLogList() {
+  const logs = await fetch(`${API}/trails/${logTrailId}/logs`).then(r => r.json());
+  const list = document.getElementById('logList');
+  if (!logs.length) {
+    list.innerHTML = '<div class="log-empty">No hikes logged yet.</div>';
+    return;
+  }
+  list.innerHTML = logs.map(l => `
+    <div class="log-entry" id="log-${l.id}">
+      <span class="log-entry-date">${fmtDate(l.hiked_date)}</span>
+      <span class="log-entry-note">${l.note ? esc(l.note) : '<em style="opacity:.5">no note</em>'}</span>
+      <button class="log-entry-del" onclick="deleteLog(${l.id})" title="Remove this entry">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitLog() {
+  const date = document.getElementById('logDate').value;
+  if (!date) { toast('Pick a date first', 'error'); return; }
+  const note = document.getElementById('logNote').value.trim();
+  const res = await fetch(`${API}/trails/${logTrailId}/logs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hiked_date: date, note: note || null }),
+  });
+  if (!res.ok) { toast('Failed to save log', 'error'); return; }
+  document.getElementById('logNote').value = '';
+  toast('Hike logged!', 'success');
+  await refreshLogList();
+  await loadTrails();
+  await loadStats();
+}
+
+async function deleteLog(logId) {
+  await fetch(`${API}/logs/${logId}`, { method: 'DELETE' });
+  await refreshLogList();
+  await loadTrails();
+  await loadStats();
+}
+
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); closeLogModal(); }
 });
 
 loadStats();

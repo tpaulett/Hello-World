@@ -27,7 +27,15 @@ db.exec(`
     notes TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
-  )
+  );
+  CREATE TABLE IF NOT EXISTS hike_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trail_id INTEGER NOT NULL REFERENCES trails(id) ON DELETE CASCADE,
+    hiked_date TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_hike_logs_trail ON hike_logs(trail_id);
 `);
 
 // Seed data if empty
@@ -91,19 +99,25 @@ if (count.c === 0) {
 
 app.get('/api/trails', (req, res) => {
   const { search, difficulty, has_lake, completed } = req.query;
-  let sql = 'SELECT * FROM trails WHERE 1=1';
+  let sql = `
+    SELECT t.*,
+      COUNT(l.id) as log_count,
+      MAX(l.hiked_date) as last_hiked
+    FROM trails t
+    LEFT JOIN hike_logs l ON l.trail_id = t.id
+    WHERE 1=1`;
   const params = [];
 
   if (search) {
-    sql += ' AND (trail_name LIKE ? OR nearest_town LIKE ? OR water_feature_details LIKE ?)';
+    sql += ' AND (t.trail_name LIKE ? OR t.nearest_town LIKE ? OR t.water_feature_details LIKE ?)';
     const s = `%${search}%`;
     params.push(s, s, s);
   }
-  if (difficulty) { sql += ' AND difficulty = ?'; params.push(difficulty); }
-  if (has_lake !== undefined && has_lake !== '') { sql += ' AND has_lake = ?'; params.push(Number(has_lake)); }
-  if (completed !== undefined && completed !== '') { sql += ' AND completed = ?'; params.push(Number(completed)); }
+  if (difficulty) { sql += ' AND t.difficulty = ?'; params.push(difficulty); }
+  if (has_lake !== undefined && has_lake !== '') { sql += ' AND t.has_lake = ?'; params.push(Number(has_lake)); }
+  if (completed !== undefined && completed !== '') { sql += ' AND t.completed = ?'; params.push(Number(completed)); }
 
-  sql += ' ORDER BY trail_name ASC';
+  sql += ' GROUP BY t.id ORDER BY t.trail_name ASC';
   res.json(db.prepare(sql).all(...params));
 });
 
@@ -155,6 +169,31 @@ app.patch('/api/trails/:id/complete', (req, res) => {
   db.prepare(`UPDATE trails SET completed = ?, updated_at = datetime('now') WHERE id = ?`)
     .run(trail.completed ? 0 : 1, req.params.id);
   res.json(db.prepare('SELECT * FROM trails WHERE id = ?').get(req.params.id));
+});
+
+// Hike log routes
+app.get('/api/trails/:id/logs', (req, res) => {
+  const trail = db.prepare('SELECT id FROM trails WHERE id = ?').get(req.params.id);
+  if (!trail) return res.status(404).json({ error: 'Not found' });
+  const logs = db.prepare('SELECT * FROM hike_logs WHERE trail_id = ? ORDER BY hiked_date DESC').all(req.params.id);
+  res.json(logs);
+});
+
+app.post('/api/trails/:id/logs', (req, res) => {
+  const trail = db.prepare('SELECT id FROM trails WHERE id = ?').get(req.params.id);
+  if (!trail) return res.status(404).json({ error: 'Not found' });
+  const { hiked_date, note } = req.body;
+  if (!hiked_date) return res.status(400).json({ error: 'hiked_date is required' });
+  const result = db.prepare('INSERT INTO hike_logs (trail_id, hiked_date, note) VALUES (?, ?, ?)').run(req.params.id, hiked_date, note || null);
+  // auto-mark trail completed on first log
+  db.prepare(`UPDATE trails SET completed = 1, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
+  res.status(201).json(db.prepare('SELECT * FROM hike_logs WHERE id = ?').get(result.lastInsertRowid));
+});
+
+app.delete('/api/logs/:id', (req, res) => {
+  const result = db.prepare('DELETE FROM hike_logs WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
+  res.status(204).end();
 });
 
 app.get('/api/stats', (req, res) => {
