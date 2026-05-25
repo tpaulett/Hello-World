@@ -632,7 +632,17 @@ async function loadTrails() {
   if (diff) params.set('difficulty', diff);
   if (lake !== '') params.set('has_lake', lake);
   if (done !== '') params.set('completed', done);
-  trails = await fetch(`${API}/trails?${params}`).then(r => r.json());
+  try {
+    const res = await fetch(`${API}/trails?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    trails = await res.json();
+  } catch(err) {
+    trails = [];
+    const empty = document.getElementById('emptyState');
+    empty.style.display = 'block';
+    empty.innerHTML = `<div class="empty-icon">⚠️</div><p style="color:#dc2626;font-weight:600">Could not reach the server.</p><p style="margin-top:6px">Make sure it is running:<br><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">npm run hiking</code></p>`;
+    return;
+  }
   sortAndRender();
   updateMapMarkers(trails);
 }

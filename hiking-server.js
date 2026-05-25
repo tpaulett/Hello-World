@@ -96,7 +96,15 @@ const CANONICAL_TRAILS = [
   { canonical_id: 'rice-lake',                trail_name: 'Rice Lake',                    nearest_town: 'Dunton, CO',        driving_dist: '~345 mi', has_lake: 1, water_feature_details: 'Extreme solitude in high alpine.',                               difficulty: 'Moderate', length: '~5.0 mi',  elevation_gain: '~1,200 ft', lat: 37.8612, lng: -108.0312, alltrails_link: '' },
 ];
 
-// Sync on every startup: insert missing canonical trails, backfill canonical_id on old rows
+// Sync on every startup in two passes:
+//   Pass 1 — claim existing rows by trail_name (must happen BEFORE inserts to avoid
+//             UNIQUE constraint conflicts when the same canonical_id would otherwise
+//             exist on both the old row and the newly-inserted row).
+//   Pass 2 — insert any canonical trail that still has no row with that canonical_id.
+const backfillStmt = db.prepare(`
+  UPDATE OR IGNORE trails SET canonical_id = @canonical_id
+  WHERE trail_name = @trail_name AND canonical_id IS NULL
+`);
 const syncStmt = db.prepare(`
   INSERT OR IGNORE INTO trails
     (canonical_id, trail_name, nearest_town, driving_dist, has_lake, water_feature_details,
@@ -105,12 +113,9 @@ const syncStmt = db.prepare(`
     (@canonical_id, @trail_name, @nearest_town, @driving_dist, @has_lake, @water_feature_details,
      @difficulty, @length, @elevation_gain, @lat, @lng, @alltrails_link)
 `);
-const backfillStmt = db.prepare(`
-  UPDATE trails SET canonical_id = @canonical_id
-  WHERE trail_name = @trail_name AND canonical_id IS NULL
-`);
 db.transaction(trails => {
-  trails.forEach(t => { syncStmt.run(t); backfillStmt.run(t); });
+  trails.forEach(t => backfillStmt.run(t)); // pass 1: claim existing rows by name
+  trails.forEach(t => syncStmt.run(t));      // pass 2: insert only truly missing ones
 })(CANONICAL_TRAILS);
 
 const synced = db.prepare('SELECT COUNT(*) as c FROM trails WHERE canonical_id IS NOT NULL').get().c;
