@@ -603,30 +603,113 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-const API = '/api';
-let allTrails = []; // full set — always all 45, refreshed after any mutation
-let trails    = []; // filtered/sorted view driving the table
+// ── Canonical trail data (45 trails) ─────────────────────────────────────────
+const CANONICAL_TRAILS = [
+  { canonical_id: 'hells-hole-trail',           trail_name: 'Hells Hole Trail',            nearest_town: 'Idaho Springs, CO', driving_dist: '~40 mi',  has_lake: 0, water_feature_details: 'Ends in a glacial cirque; no lake.',                          difficulty: 'Hard',     length: '~8.0 mi',  elevation_gain: '~1,900 ft', lat: 39.6644, lng: -105.6253, alltrails_link: '' },
+  { canonical_id: 'red-rock-lake',              trail_name: 'Red Rock Lake',                nearest_town: 'Ward, CO',          driving_dist: '~47 mi',  has_lake: 1, water_feature_details: 'Easily accessible mirrored lake.',                            difficulty: 'Easy',     length: '~0.5 mi',  elevation_gain: '~25 ft',    lat: 40.0881, lng: -105.5451, alltrails_link: '' },
+  { canonical_id: 'square-top-lakes',           trail_name: 'Square Top Lakes',             nearest_town: 'Georgetown, CO',    driving_dist: '~48 mi',  has_lake: 1, water_feature_details: 'Two high-alpine lakes with views of Mt. Bierstadt.',           difficulty: 'Moderate', length: '~4.1 mi',  elevation_gain: '~900 ft',   lat: 39.5936, lng: -105.7322, alltrails_link: '' },
+  { canonical_id: 'silver-dollar-murray-lakes', trail_name: 'Silver Dollar & Murray Lakes', nearest_town: 'Georgetown, CO',    driving_dist: '~48 mi',  has_lake: 1, water_feature_details: 'Passes Naylor Lake; hits Silver Dollar & Murray.',            difficulty: 'Moderate', length: '~4.2 mi',  elevation_gain: '~1,073 ft', lat: 39.6389, lng: -105.7533, alltrails_link: '' },
+  { canonical_id: 'brainard-lake-loop',         trail_name: 'Brainard Lake Loop',           nearest_town: 'Ward, CO',          driving_dist: '~49 mi',  has_lake: 1, water_feature_details: 'Main lake; paved/gravel path.',                               difficulty: 'Easy',     length: '~1.5 mi',  elevation_gain: '~50 ft',    lat: 40.0782, lng: -105.5765, alltrails_link: '' },
+  { canonical_id: 'mitchell-lake',              trail_name: 'Mitchell Lake',                nearest_town: 'Ward, CO',          driving_dist: '~49 mi',  has_lake: 1, water_feature_details: 'Quick hike to a high alpine lake.',                            difficulty: 'Easy',     length: '~1.8 mi',  elevation_gain: '~230 ft',   lat: 40.0831, lng: -105.5841, alltrails_link: '' },
+  { canonical_id: 'long-lake-loop',             trail_name: 'Long Lake Loop',               nearest_town: 'Ward, CO',          driving_dist: '~49 mi',  has_lake: 1, water_feature_details: 'Flat loop around a massive lake.',                             difficulty: 'Easy',     length: '~2.8 mi',  elevation_gain: '~180 ft',   lat: 40.0768, lng: -105.5891, alltrails_link: '' },
+  { canonical_id: 'lefthand-reservoir',         trail_name: 'Lefthand Reservoir',           nearest_town: 'Ward, CO',          driving_dist: '~50 mi',  has_lake: 1, water_feature_details: 'Open reservoir via service road.',                             difficulty: 'Easy',     length: '~4.0 mi',  elevation_gain: '~615 ft',   lat: 40.0722, lng: -105.5424, alltrails_link: '' },
+  { canonical_id: 'lower-crater-lakes',         trail_name: 'Lower Crater Lakes',           nearest_town: 'Rollinsville, CO',  driving_dist: '~51 mi',  has_lake: 1, water_feature_details: 'Reaches two alpine lakes (Lower and Upper).',                  difficulty: 'Moderate', length: '~5.5 mi',  elevation_gain: '~1,400 ft', lat: 39.9161, lng: -105.6744, alltrails_link: '' },
+  { canonical_id: 'lost-lake-hessie',           trail_name: 'Lost Lake via Hessie TH',      nearest_town: 'Nederland, CO',     driving_dist: '~53 mi',  has_lake: 1, water_feature_details: 'Very popular lake with a waterfall along the way.',            difficulty: 'Moderate', length: '~4.0 mi',  elevation_gain: '~830 ft',   lat: 39.9547, lng: -105.6158, alltrails_link: '' },
+  { canonical_id: 'lake-isabelle-jean-lunning', trail_name: 'Lake Isabelle / Jean Lunning', nearest_town: 'Nederland, CO',     driving_dist: '~54 mi',  has_lake: 1, water_feature_details: 'Loops Long Lake and leads to Lake Isabelle.',                 difficulty: 'Moderate', length: '~4.4 mi',  elevation_gain: '~475 ft',   lat: 40.0811, lng: -105.5831, alltrails_link: '' },
+  { canonical_id: 'diamond-lake',               trail_name: 'Diamond Lake',                 nearest_town: 'Nederland, CO',     driving_dist: '~58 mi',  has_lake: 1, water_feature_details: 'Stunning alpine lake; starts at 10,000 ft.',                   difficulty: 'Moderate', length: '~5.0 mi',  elevation_gain: '~1,220 ft', lat: 39.9602, lng: -105.6322, alltrails_link: '' },
+  { canonical_id: 'blue-lake-mitchell-lake',    trail_name: 'Blue Lake / Mitchell Lake',    nearest_town: 'Ward, CO',          driving_dist: '~59 mi',  has_lake: 1, water_feature_details: 'Passes Mitchell Lake; ends at Blue Lake.',                     difficulty: 'Moderate', length: '~6.2 mi',  elevation_gain: '~994 ft',   lat: 40.0911, lng: -105.6022, alltrails_link: '' },
+  { canonical_id: 'ouzel-falls',                trail_name: 'Ouzel Falls',                  nearest_town: 'Allenspark, CO',    driving_dist: '~68 mi',  has_lake: 0, water_feature_details: 'Ends at a massive waterfall; no lake.',                         difficulty: 'Moderate', length: '~5.7 mi',  elevation_gain: '~1,085 ft', lat: 40.2031, lng: -105.6042, alltrails_link: '' },
+  { canonical_id: 'ouzel-lake-trail',           trail_name: 'Ouzel Lake Trail',             nearest_town: 'Allenspark, CO',    driving_dist: '~68 mi',  has_lake: 1, water_feature_details: 'A quiet, lily-pad covered alpine lake.',                        difficulty: 'Moderate', length: '~9.8 mi',  elevation_gain: '~1,510 ft', lat: 40.2036, lng: -105.6044, alltrails_link: '' },
+  { canonical_id: 'brady-lake-trail',           trail_name: 'Brady Lake Trail',             nearest_town: 'Minturn, CO',       driving_dist: '~105 mi', has_lake: 1, water_feature_details: 'High-alpine lake tucked below a ridge.',                        difficulty: 'Moderate', length: '~4.3 mi',  elevation_gain: '~710 ft',   lat: 39.3621, lng: -106.5122, alltrails_link: '' },
+  { canonical_id: 'missouri-fancy-lakes',       trail_name: 'Missouri & Fancy Lakes',       nearest_town: 'Minturn, CO',       driving_dist: '~105 mi', has_lake: 1, water_feature_details: 'Features Missouri Lakes and Fancy Lake.',                       difficulty: 'Hard',     length: '~8.8 mi',  elevation_gain: '~2,500 ft', lat: 39.3883, lng: -106.5683, alltrails_link: '' },
+  { canonical_id: 'surprise-lake',              trail_name: 'Surprise Lake',                nearest_town: 'Minturn, CO',       driving_dist: '~108 mi', has_lake: 1, water_feature_details: 'A small, serene lake in dense forest.',                         difficulty: 'Moderate', length: '~5.4 mi',  elevation_gain: '~1,450 ft', lat: 39.5601, lng: -106.3211, alltrails_link: '' },
+  { canonical_id: 'whitney-lake-trail',         trail_name: 'Whitney Lake Trail',           nearest_town: 'Minturn, CO',       driving_dist: '~112 mi', has_lake: 1, water_feature_details: 'Alpine lake at the base of Whitney Peak.',                      difficulty: 'Moderate', length: '~5.1 mi',  elevation_gain: '~1,250 ft', lat: 39.3789, lng: -106.5022, alltrails_link: '' },
+  { canonical_id: 'linkins-lake-trail',         trail_name: 'Linkins Lake Trail',           nearest_town: 'Twin Lakes, CO',    driving_dist: '~126 mi', has_lake: 1, water_feature_details: 'High-tundra lake; very short but steep.',                       difficulty: 'Moderate', length: '~1.4 mi',  elevation_gain: '~440 ft',   lat: 39.1121, lng: -106.5612, alltrails_link: '' },
+  { canonical_id: 'petroleum-anderson',         trail_name: 'Petroleum & Anderson',         nearest_town: 'Aspen, CO',         driving_dist: '~140 mi', has_lake: 1, water_feature_details: 'Two lakes; Petroleum is the larger basin.',                     difficulty: 'Moderate', length: '~4.2 mi',  elevation_gain: '~1,269 ft', lat: 39.0621, lng: -106.7021, alltrails_link: '' },
+  { canonical_id: 'lake-agnes-trail',           trail_name: 'Lake Agnes Trail',             nearest_town: 'Gould, CO',         driving_dist: '~146 mi', has_lake: 1, water_feature_details: 'Iconic lake with an island and rock walls.',                    difficulty: 'Moderate', length: '~1.7 mi',  elevation_gain: '~450 ft',   lat: 40.4853, lng: -105.8978, alltrails_link: '' },
+  { canonical_id: 'michigan-american-lakes',    trail_name: 'Michigan (American) Lakes',    nearest_town: 'Gould, CO',         driving_dist: '~146 mi', has_lake: 1, water_feature_details: 'Two large lakes in a wide alpine basin.',                       difficulty: 'Moderate', length: '~7.4 mi',  elevation_gain: '~1,500 ft', lat: 40.4721, lng: -105.9121, alltrails_link: '' },
+  { canonical_id: 'savage-lakes-trail',         trail_name: 'Savage Lakes Trail',           nearest_town: 'Meredith, CO',      driving_dist: '~158 mi', has_lake: 1, water_feature_details: 'Reaches Lower Savage Lake.',                                   difficulty: 'Moderate', length: '~2.8 mi',  elevation_gain: '~1,250 ft', lat: 39.2922, lng: -106.5789, alltrails_link: '' },
+  { canonical_id: 'chapman-trail',              trail_name: 'Chapman Trail',                nearest_town: 'Meredith, CO',      driving_dist: '~159 mi', has_lake: 0, water_feature_details: 'Follows the river; terminates at road.',                        difficulty: 'Moderate', length: '~3.5 mi',  elevation_gain: '~1,100 ft', lat: 39.2851, lng: -106.6342, alltrails_link: '' },
+  { canonical_id: 'sawyer-creek-trail',         trail_name: 'Sawyer Creek Trail',           nearest_town: 'Meredith, CO',      driving_dist: '~161 mi', has_lake: 0, water_feature_details: 'Follows a creek to a high ridge; no lake.',                    difficulty: 'Moderate', length: '~4.0 mi',  elevation_gain: '~750 ft',   lat: 39.2941, lng: -106.6022, alltrails_link: '' },
+  { canonical_id: 'mill-lake-trail',            trail_name: 'Mill Lake Trail',              nearest_town: 'Ohio City, CO',     driving_dist: '~172 mi', has_lake: 1, water_feature_details: 'Tucked in the Fossil Ridge Wilderness.',                        difficulty: 'Moderate', length: '~3.8 mi',  elevation_gain: '~1,440 ft', lat: 38.5942, lng: -106.5412, alltrails_link: '' },
+  { canonical_id: 'sloan-lake',                 trail_name: 'Sloan Lake',                   nearest_town: 'Lake City, CO',     driving_dist: '~250 mi', has_lake: 1, water_feature_details: 'High alpine cirque (American Basin).',                          difficulty: 'Moderate', length: '~3.2 mi',  elevation_gain: '~1,320 ft', lat: 37.9189, lng: -107.5022, alltrails_link: '' },
+  { canonical_id: 'larson-lakes',               trail_name: 'Larson Lakes',                 nearest_town: 'Lake City, CO',     driving_dist: '~255 mi', has_lake: 1, water_feature_details: 'Forested lakes; good fishing.',                                 difficulty: 'Moderate', length: '~3.0 mi',  elevation_gain: '~600 ft',   lat: 37.9321, lng: -107.3012, alltrails_link: '' },
+  { canonical_id: 'poage-lake',                 trail_name: 'Poage Lake',                   nearest_town: 'Creede, CO',        driving_dist: '~260 mi', has_lake: 1, water_feature_details: 'Easy walk to massive cliff walls.',                             difficulty: 'Easy',     length: '~1.0 mi',  elevation_gain: '~100 ft',   lat: 37.7121, lng: -106.8522, alltrails_link: '' },
+  { canonical_id: 'full-moon-lake',             trail_name: 'Full Moon Lake',               nearest_town: 'Creede, CO',        driving_dist: '~262 mi', has_lake: 1, water_feature_details: 'Remote high-alpine destination.',                               difficulty: 'Moderate', length: '~6.0 mi',  elevation_gain: '~1,400 ft', lat: 37.7421, lng: -106.9122, alltrails_link: '' },
+  { canonical_id: 'waterdog-lakes',             trail_name: 'Waterdog Lakes',               nearest_town: 'Lake City, CO',     driving_dist: '~265 mi', has_lake: 1, water_feature_details: 'Two lakes sitting at tree line.',                               difficulty: 'Moderate', length: '~3.8 mi',  elevation_gain: '~1,250 ft', lat: 38.4921, lng: -106.3512, alltrails_link: '' },
+  { canonical_id: 'emerald-lake',               trail_name: 'Emerald Lake',                 nearest_town: 'Lake City, CO',     driving_dist: '~270 mi', has_lake: 1, water_feature_details: 'Tucked in the Weminuche Wilderness.',                           difficulty: 'Moderate', length: '~3.6 mi',  elevation_gain: '~770 ft',   lat: 37.5621, lng: -107.4512, alltrails_link: '' },
+  { canonical_id: 'geyser-spring',              trail_name: 'Geyser Spring',                nearest_town: 'Dunton, CO',        driving_dist: '~295 mi', has_lake: 0, water_feature_details: 'Bubbling geyser pool.',                                         difficulty: 'Moderate', length: '~2.8 mi',  elevation_gain: '~600 ft',   lat: 37.7536, lng: -108.0933, alltrails_link: '' },
+  { canonical_id: 'crystal-lake',               trail_name: 'Crystal Lake',                 nearest_town: 'Ouray, CO',         driving_dist: '~300 mi', has_lake: 1, water_feature_details: 'Mirror lake off Red Mountain Pass.',                            difficulty: 'Moderate', length: '~4.0 mi',  elevation_gain: '~1,000 ft', lat: 37.9221, lng: -107.7122, alltrails_link: '' },
+  { canonical_id: 'spud-potato-lake',           trail_name: 'Spud (Potato) Lake',           nearest_town: 'Silverton, CO',     driving_dist: '~305 mi', has_lake: 1, water_feature_details: 'Lily-pad lake; family friendly.',                               difficulty: 'Easy',     length: '~2.0 mi',  elevation_gain: '~400 ft',   lat: 37.6921, lng: -107.7812, alltrails_link: '' },
+  { canonical_id: 'lower-blue-lake',            trail_name: 'Lower Blue Lake',              nearest_town: 'Ridgway, CO',       driving_dist: '~310 mi', has_lake: 1, water_feature_details: 'Iconic "San Juan Blue" water.',                                 difficulty: 'Moderate', length: '~6.3 mi',  elevation_gain: '~1,590 ft', lat: 38.0169, lng: -107.8022, alltrails_link: '' },
+  { canonical_id: 'highland-mary-lakes',        trail_name: 'Highland Mary Lakes',          nearest_town: 'Silverton, CO',     driving_dist: '~315 mi', has_lake: 1, water_feature_details: 'High tundra lake series.',                                      difficulty: 'Moderate', length: '~6.0 mi',  elevation_gain: '~1,730 ft', lat: 37.7812, lng: -107.5812, alltrails_link: '' },
+  { canonical_id: 'ice-lake-island',            trail_name: 'Ice Lake & Island',            nearest_town: 'Silverton, CO',     driving_dist: '~320 mi', has_lake: 1, water_feature_details: 'Famous turquoise basin.',                                        difficulty: 'Hard',     length: '~7.0 mi',  elevation_gain: '~2,600 ft', lat: 37.8286, lng: -107.7772, alltrails_link: '' },
+  { canonical_id: 'priest-lake',                trail_name: 'Priest Lake',                  nearest_town: 'Rico, CO',          driving_dist: '~322 mi', has_lake: 1, water_feature_details: 'Serene, accessible high lake.',                                 difficulty: 'Easy',     length: '~2.5 mi',  elevation_gain: '~350 ft',   lat: 37.8122, lng: -107.9022, alltrails_link: '' },
+  { canonical_id: 'hope-lake',                  trail_name: 'Hope Lake',                    nearest_town: 'Ophir, CO',         driving_dist: '~325 mi', has_lake: 1, water_feature_details: 'Brilliant blue; highly scenic.',                                 difficulty: 'Moderate', length: '~6.0 mi',  elevation_gain: '~1,515 ft', lat: 37.8151, lng: -107.8422, alltrails_link: '' },
+  { canonical_id: 'bridal-veil-to-blue',        trail_name: 'Bridal Veil to Blue',          nearest_town: 'Telluride, CO',     driving_dist: '~330 mi', has_lake: 1, water_feature_details: 'Passes falls to a high basin.',                                 difficulty: 'Moderate', length: '~6.0 mi',  elevation_gain: '~1,820 ft', lat: 37.9192, lng: -107.7681, alltrails_link: '' },
+  { canonical_id: 'fish-creek-reservoir',       trail_name: 'Fish Creek Reservoir',         nearest_town: 'Dunton, CO',        driving_dist: '~335 mi', has_lake: 1, water_feature_details: 'Secluded high-basin reservoirs.',                               difficulty: 'Moderate', length: '~4.6 mi',  elevation_gain: '~800 ft',   lat: 37.7822, lng: -108.0412, alltrails_link: '' },
+  { canonical_id: 'navajo-lake',                trail_name: 'Navajo Lake',                  nearest_town: 'Dunton, CO',        driving_dist: '~340 mi', has_lake: 1, water_feature_details: 'Remote lake below Mt. Wilson.',                                  difficulty: 'Moderate', length: '~9.2 mi',  elevation_gain: '~1,830 ft', lat: 37.8544, lng: -108.0222, alltrails_link: '' },
+  { canonical_id: 'rice-lake',                  trail_name: 'Rice Lake',                    nearest_town: 'Dunton, CO',        driving_dist: '~345 mi', has_lake: 1, water_feature_details: 'Extreme solitude in high alpine.',                               difficulty: 'Moderate', length: '~5.0 mi',  elevation_gain: '~1,200 ft', lat: 37.8612, lng: -108.0312, alltrails_link: '' },
+];
+
+// ── localStorage data layer ───────────────────────────────────────────────────
+const LS_TRAILS = 'hiking_trails';
+const LS_LOGS   = 'hiking_logs';
+const LS_SEQ    = 'hiking_seq';
+
+function nextId() {
+  const n = (parseInt(localStorage.getItem(LS_SEQ) || '0') + 1);
+  localStorage.setItem(LS_SEQ, n);
+  return n;
+}
+function getStoredTrails() { return JSON.parse(localStorage.getItem(LS_TRAILS) || '[]'); }
+function getStoredLogs()   { return JSON.parse(localStorage.getItem(LS_LOGS)   || '[]'); }
+function saveStoredTrails(t) { localStorage.setItem(LS_TRAILS, JSON.stringify(t)); }
+function saveStoredLogs(l)   { localStorage.setItem(LS_LOGS,   JSON.stringify(l)); }
+
+// Idempotent seed: runs on every page load.
+// Pass 1 — backfill canonical_id onto existing rows matched by name.
+// Pass 2 — insert any canonical trail that has no row yet.
+function syncCanonicalTrails() {
+  const stored = getStoredTrails();
+  let changed = false;
+  for (const canon of CANONICAL_TRAILS) {
+    if (stored.find(t => t.canonical_id === canon.canonical_id)) continue;
+    const byName = stored.find(t => t.trail_name === canon.trail_name && !t.canonical_id);
+    if (byName) {
+      byName.canonical_id = canon.canonical_id;
+      changed = true;
+    } else {
+      stored.push({ ...canon, id: nextId(), completed: 0, notes: '', created_at: new Date().toISOString() });
+      changed = true;
+    }
+  }
+  if (changed) saveStoredTrails(stored);
+}
+
+// Return all trails with log_count + last_hiked computed, sorted by name.
+function getTrailsWithStats() {
+  const trails = getStoredTrails();
+  const logs   = getStoredLogs();
+  return trails.map(t => {
+    const tl = logs.filter(l => l.trail_id === t.id);
+    const dates = tl.map(l => l.hiked_date).sort().reverse();
+    return { ...t, log_count: tl.length, last_hiked: dates[0] || null };
+  }).sort((a, b) => a.trail_name.localeCompare(b.trail_name));
+}
+
+// ── App state ─────────────────────────────────────────────────────────────────
+let allTrails = [];
+let trails    = [];
 let sortCol = 'trail_name';
 let sortDir = 1;
 let deleteTargetId = null;
 
-// Fetch every trail from the server (no filter params) and store in allTrails.
-// Client-side filtering then slices the in-memory cache — no extra round-trips.
-async function fetchAllTrails() {
-  try {
-    const res = await fetch(`${API}/trails`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    allTrails = await res.json();
-  } catch(err) {
-    allTrails = [];
-    const empty = document.getElementById('emptyState');
-    empty.style.display = 'block';
-    empty.innerHTML = `<div class="empty-icon">⚠️</div><p style="color:#dc2626;font-weight:600">Could not reach the server.</p><p style="margin-top:6px">Make sure it is running:<br><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">npm run hiking</code></p>`;
-    return;
-  }
+function fetchAllTrails() {
+  allTrails = getTrailsWithStats();
   updateStats();
-  applyFilters();                  // refresh filtered table view
-  updateMapMarkers(allTrails);     // map always shows the full 45
+  applyFilters();
+  updateMapMarkers(allTrails);
 }
 
 function updateStats() {
@@ -723,9 +806,12 @@ function esc(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-async function toggleComplete(id) {
-  await fetch(`${API}/trails/${id}/complete`, { method: 'PATCH' });
-  await fetchAllTrails();
+function toggleComplete(id) {
+  const stored = getStoredTrails();
+  const t = stored.find(t => t.id === id);
+  if (t) t.completed = t.completed ? 0 : 1;
+  saveStoredTrails(stored);
+  fetchAllTrails();
 }
 
 function openModal(trail = null) {
@@ -748,16 +834,16 @@ function openModal(trail = null) {
   document.getElementById('fieldName').focus();
 }
 
-async function openEdit(id) {
-  const trail = await fetch(`${API}/trails/${id}`).then(r => r.json());
-  openModal(trail);
+function openEdit(id) {
+  const trail = getStoredTrails().find(t => t.id === id);
+  if (trail) openModal(trail);
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 function closeModalOnBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-async function saveTrail() {
-  const id = document.getElementById('fieldId').value;
+function saveTrail() {
+  const idStr = document.getElementById('fieldId').value;
   const payload = {
     trail_name: document.getElementById('fieldName').value.trim(),
     nearest_town: document.getElementById('fieldTown').value.trim(),
@@ -774,13 +860,17 @@ async function saveTrail() {
     completed: document.getElementById('fieldCompleted').checked ? 1 : 0,
   };
   if (!payload.trail_name) { toast('Trail name is required', 'error'); return; }
-  const url = id ? `${API}/trails/${id}` : `${API}/trails`;
-  const method = id ? 'PUT' : 'POST';
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (!res.ok) { toast('Save failed', 'error'); return; }
-  toast(id ? 'Trail updated!' : 'Trail added!', 'success');
+  const stored = getStoredTrails();
+  if (idStr) {
+    const idx = stored.findIndex(t => t.id === Number(idStr));
+    if (idx >= 0) stored[idx] = { ...stored[idx], ...payload, updated_at: new Date().toISOString() };
+  } else {
+    stored.push({ ...payload, id: nextId(), created_at: new Date().toISOString() });
+  }
+  saveStoredTrails(stored);
+  toast(idStr ? 'Trail updated!' : 'Trail added!', 'success');
   closeModal();
-  await fetchAllTrails();
+  fetchAllTrails();
 }
 
 function openDeleteConfirm(id, name) {
@@ -789,12 +879,13 @@ function openDeleteConfirm(id, name) {
   document.getElementById('confirmOverlay').classList.add('open');
 }
 function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); deleteTargetId = null; }
-async function confirmDelete() {
+function confirmDelete() {
   if (!deleteTargetId) return;
-  await fetch(`${API}/trails/${deleteTargetId}`, { method: 'DELETE' });
+  saveStoredTrails(getStoredTrails().filter(t => t.id !== deleteTargetId));
+  saveStoredLogs(getStoredLogs().filter(l => l.trail_id !== deleteTargetId));
   toast('Trail deleted', 'success');
   closeConfirm();
-  await fetchAllTrails();
+  fetchAllTrails();
 }
 
 function toast(msg, type = '') {
@@ -815,14 +906,13 @@ function fmtDate(iso) {
   return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-async function openLogModal(id, name) {
+function openLogModal(id, name) {
   logTrailId = id;
   document.getElementById('logTrailName').textContent = name;
-  // Default date to today
   document.getElementById('logDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('logNote').value = '';
   document.getElementById('logOverlay').classList.add('open');
-  await refreshLogList();
+  refreshLogList();
 }
 
 function closeLogModal() {
@@ -831,8 +921,10 @@ function closeLogModal() {
 }
 function closeLogOnBg(e) { if (e.target === document.getElementById('logOverlay')) closeLogModal(); }
 
-async function refreshLogList() {
-  const logs = await fetch(`${API}/trails/${logTrailId}/logs`).then(r => r.json());
+function refreshLogList() {
+  const logs = getStoredLogs()
+    .filter(l => l.trail_id === logTrailId)
+    .sort((a, b) => b.hiked_date.localeCompare(a.hiked_date));
   const list = document.getElementById('logList');
   if (!logs.length) {
     list.innerHTML = '<div class="log-empty">No hikes logged yet.</div>';
@@ -847,26 +939,27 @@ async function refreshLogList() {
   `).join('');
 }
 
-async function submitLog() {
+function submitLog() {
   const date = document.getElementById('logDate').value;
   if (!date) { toast('Pick a date first', 'error'); return; }
   const note = document.getElementById('logNote').value.trim();
-  const res = await fetch(`${API}/trails/${logTrailId}/logs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hiked_date: date, note: note || null }),
-  });
-  if (!res.ok) { toast('Failed to save log', 'error'); return; }
+  const logs = getStoredLogs();
+  logs.push({ id: nextId(), trail_id: logTrailId, hiked_date: date, note: note || null, created_at: new Date().toISOString() });
+  saveStoredLogs(logs);
+  // auto-mark trail completed
+  const stored = getStoredTrails();
+  const t = stored.find(t => t.id === logTrailId);
+  if (t) { t.completed = 1; saveStoredTrails(stored); }
   document.getElementById('logNote').value = '';
   toast('Hike logged!', 'success');
-  await refreshLogList();
-  await fetchAllTrails();
+  refreshLogList();
+  fetchAllTrails();
 }
 
-async function deleteLog(logId) {
-  await fetch(`${API}/logs/${logId}`, { method: 'DELETE' });
-  await refreshLogList();
-  await fetchAllTrails();
+function deleteLog(logId) {
+  saveStoredLogs(getStoredLogs().filter(l => l.id !== logId));
+  refreshLogList();
+  fetchAllTrails();
 }
 
 // --- Map ---
@@ -964,6 +1057,7 @@ document.addEventListener('keydown', e => {
 });
 
 initMap();
+syncCanonicalTrails();
 fetchAllTrails();
 </script>
 </body>
