@@ -354,9 +354,95 @@
   .confirm-box p { font-size: .875rem; color: var(--gray-600); margin-bottom: 20px; }
   .confirm-btns { display: flex; gap: 10px; justify-content: center; }
 
-  /* Map panel */
-  #mapPanel { border-bottom: 1px solid var(--gray-200); }
-  #trailMap { height: 440px; }
+  /* Tab bar */
+  .tab-bar {
+    background: white;
+    border-bottom: 2px solid var(--gray-200);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tab {
+    padding: 13px 22px;
+    border: none;
+    background: none;
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--green); }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab-spacer { flex: 1; }
+
+  /* Map view */
+  #mapView { position: relative; }
+  #trailMap { height: calc(100vh - 168px); min-height: 500px; }
+
+  /* Floating search bar over the map */
+  .map-search-bar {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 14px rgba(0,0,0,.22);
+    width: min(560px, 92vw);
+    overflow: hidden;
+  }
+  .map-search-bar .msb-icon {
+    padding: 0 10px 0 14px;
+    color: var(--gray-400);
+    font-size: .9rem;
+    flex-shrink: 0;
+  }
+  .map-search-bar input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: .875rem;
+    font-family: inherit;
+    padding: 10px 6px;
+    min-width: 0;
+  }
+  .map-search-bar .msb-sep {
+    width: 1px; height: 22px; background: var(--gray-200); flex-shrink: 0;
+  }
+  .map-search-bar select {
+    border: none;
+    outline: none;
+    font-size: .8rem;
+    font-family: inherit;
+    color: var(--gray-600);
+    background: none;
+    cursor: pointer;
+    padding: 10px 10px;
+    flex-shrink: 0;
+  }
+  .map-pin-count {
+    position: absolute;
+    bottom: 28px;
+    right: 50px;
+    z-index: 1000;
+    background: white;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    box-shadow: 0 1px 5px rgba(0,0,0,.2);
+    pointer-events: none;
+  }
 
   /* Map legend (Leaflet control) */
   .map-legend {
@@ -396,11 +482,12 @@
   .popup-alltrails:hover { text-decoration: underline; }
 
   @media (max-width: 768px) {
-    header, .stats-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
+    header, .stats-bar, .toolbar, .tab-bar { padding-left: 16px; padding-right: 16px; }
     .table-wrap { margin: 12px 16px; }
     .form-grid { grid-template-columns: 1fr; }
     .stats-bar { gap: 16px; }
-    #trailMap { height: 300px; }
+    #trailMap { height: calc(100vh - 180px); min-height: 320px; }
+    .tab { padding: 12px 14px; font-size: .82rem; }
   }
 </style>
 </head>
@@ -426,62 +513,88 @@
   <div class="stat"><span class="stat-value" id="statHard" style="color:#991b1b">—</span><span class="stat-label">Hard</span></div>
 </div>
 
-<div class="toolbar">
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="Search trails, towns…" oninput="applyFilters()">
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab active" id="tabMap"  onclick="switchTab('map')">🗺️ Map</button>
+  <button class="tab"        id="tabList" onclick="switchTab('list')">📋 List</button>
+  <div class="tab-spacer"></div>
+  <button class="btn btn-primary" onclick="openModal()" style="margin:8px 0">+ Add Trail</button>
+</div>
+
+<!-- Map view -->
+<div id="mapView">
+  <div class="map-search-bar">
+    <span class="msb-icon">🔍</span>
+    <input type="text" id="mapSearch" placeholder="Filter pins by name, town…" oninput="applyMapFilter()">
+    <div class="msb-sep"></div>
+    <select id="mapFilterDiff" onchange="applyMapFilter()">
+      <option value="">All difficulties</option>
+      <option value="Easy">Easy</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Hard">Hard</option>
+    </select>
+    <div class="msb-sep"></div>
+    <select id="mapFilterDone" onchange="applyMapFilter()">
+      <option value="">All</option>
+      <option value="0">Not done</option>
+      <option value="1">Completed</option>
+    </select>
   </div>
-  <span class="filter-label">Difficulty:</span>
-  <select id="filterDiff" onchange="applyFilters()">
-    <option value="">All</option>
-    <option value="Easy">Easy</option>
-    <option value="Moderate">Moderate</option>
-    <option value="Hard">Hard</option>
-  </select>
-  <span class="filter-label">Lake:</span>
-  <select id="filterLake" onchange="applyFilters()">
-    <option value="">All</option>
-    <option value="1">Yes</option>
-    <option value="0">No</option>
-  </select>
-  <span class="filter-label">Done:</span>
-  <select id="filterDone" onchange="applyFilters()">
-    <option value="">All</option>
-    <option value="1">Completed</option>
-    <option value="0">Not Yet</option>
-  </select>
-  <div class="toolbar-spacer"></div>
-  <button class="btn" id="mapToggleBtn" onclick="toggleMap()">🗺️ Hide Map</button>
-  <button class="btn btn-primary" onclick="openModal()">+ Add Trail</button>
-</div>
-
-<div id="mapPanel">
   <div id="trailMap"></div>
+  <div class="map-pin-count" id="mapPinCount"></div>
 </div>
 
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th class="check-col" title="Completed"></th>
-        <th onclick="sortBy('trail_name')">Trail Name <span class="sort-icon">↕</span></th>
-        <th onclick="sortBy('nearest_town')">Nearest Town <span class="sort-icon">↕</span></th>
-        <th onclick="sortBy('driving_dist')">Drive <span class="sort-icon">↕</span></th>
-        <th onclick="sortBy('difficulty')">Difficulty <span class="sort-icon">↕</span></th>
-        <th onclick="sortBy('length')">Length <span class="sort-icon">↕</span></th>
-        <th onclick="sortBy('elevation_gain')">Elev. Gain <span class="sort-icon">↕</span></th>
-        <th>Lake?</th>
-        <th>Water Feature</th>
-        <th>Coords</th>
-        <th>Link</th>
-        <th style="cursor:default">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="trailsBody"></tbody>
-  </table>
-  <div class="empty-state" id="emptyState" style="display:none">
-    <div class="empty-icon">🗺️</div>
-    <p>No trails match your filters.</p>
+<!-- List view -->
+<div id="listView" style="display:none">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search trails, towns…" oninput="applyFilters()">
+    </div>
+    <span class="filter-label">Difficulty:</span>
+    <select id="filterDiff" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="Easy">Easy</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Hard">Hard</option>
+    </select>
+    <span class="filter-label">Lake:</span>
+    <select id="filterLake" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="1">Yes</option>
+      <option value="0">No</option>
+    </select>
+    <span class="filter-label">Done:</span>
+    <select id="filterDone" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="1">Completed</option>
+      <option value="0">Not Yet</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="check-col" title="Completed"></th>
+          <th onclick="sortBy('trail_name')">Trail Name <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('nearest_town')">Nearest Town <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('driving_dist')">Drive <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('difficulty')">Difficulty <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('length')">Length <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('elevation_gain')">Elev. Gain <span class="sort-icon">↕</span></th>
+          <th>Lake?</th>
+          <th>Water Feature</th>
+          <th>Coords</th>
+          <th>Link</th>
+          <th style="cursor:default">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="trailsBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="empty-icon">🗺️</div>
+      <p>No trails match your filters.</p>
+    </div>
   </div>
 </div>
 
@@ -709,7 +822,7 @@ function fetchAllTrails() {
   allTrails = getTrailsWithStats();
   updateStats();
   applyFilters();
-  updateMapMarkers(allTrails);
+  applyMapFilter();
 }
 
 function updateStats() {
@@ -972,10 +1085,23 @@ const DIFF_TEXT   = { Easy: '#2d6a4f',  Moderate: '#92400e', Hard: '#991b1b' };
 function initMap() {
   map = L.map('trailMap').setView([39.2, -106.2], 7);
 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     attribution: 'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Style: © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
     maxZoom: 17,
-  }).addTo(map);
+  });
+
+  const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    maxZoom: 19,
+  });
+
+  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  });
+
+  terrain.addTo(map);
+  L.control.layers({ 'Terrain': terrain, 'Satellite': satellite, 'Street': street }, {}, { position: 'topright', collapsed: false }).addTo(map);
 
   const legend = L.control({ position: 'bottomleft' });
   legend.onAdd = () => {
@@ -1042,13 +1168,30 @@ function updateMapMarkers(data) {
   });
 }
 
-function toggleMap() {
-  const panel = document.getElementById('mapPanel');
-  const btn = document.getElementById('mapToggleBtn');
-  const isHidden = panel.style.display === 'none';
-  panel.style.display = isHidden ? 'block' : 'none';
-  btn.textContent = isHidden ? '🗺️ Hide Map' : '🗺️ Show Map';
-  if (isHidden) map.invalidateSize();
+function switchTab(tab) {
+  document.getElementById('mapView').style.display  = tab === 'map'  ? 'block' : 'none';
+  document.getElementById('listView').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('tabMap').classList.toggle('active',  tab === 'map');
+  document.getElementById('tabList').classList.toggle('active', tab === 'list');
+  if (tab === 'map') { setTimeout(() => map.invalidateSize(), 10); applyMapFilter(); }
+}
+
+function applyMapFilter() {
+  const search = (document.getElementById('mapSearch')?.value || '').trim().toLowerCase();
+  const diff   = document.getElementById('mapFilterDiff')?.value || '';
+  const done   = document.getElementById('mapFilterDone')?.value ?? '';
+  const filtered = allTrails.filter(t => {
+    if (search) {
+      const hay = `${t.trail_name} ${t.nearest_town || ''} ${t.water_feature_details || ''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (diff && t.difficulty !== diff) return false;
+    if (done !== '' && t.completed !== Number(done)) return false;
+    return true;
+  });
+  updateMapMarkers(filtered);
+  const el = document.getElementById('mapPinCount');
+  if (el) el.textContent = `${filtered.length} of ${allTrails.length} trails`;
 }
 
 // Keyboard shortcuts
@@ -1059,6 +1202,7 @@ document.addEventListener('keydown', e => {
 initMap();
 syncCanonicalTrails();
 fetchAllTrails();
+switchTab('map');
 </script>
 </body>
 </html>
