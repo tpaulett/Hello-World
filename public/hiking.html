@@ -604,50 +604,60 @@
 
 <script>
 const API = '/api';
-let trails = [];
+let allTrails = []; // full set — always all 45, refreshed after any mutation
+let trails    = []; // filtered/sorted view driving the table
 let sortCol = 'trail_name';
 let sortDir = 1;
 let deleteTargetId = null;
 
-async function loadStats() {
-  const s = await fetch(`${API}/stats`).then(r => r.json());
-  document.getElementById('statTotal').textContent = s.total;
-  document.getElementById('statCompleted').textContent = s.completed;
-  document.getElementById('statLake').textContent = s.withLake;
-  const easy = s.byDiff.find(d => d.difficulty === 'Easy');
-  const mod = s.byDiff.find(d => d.difficulty === 'Moderate');
-  const hard = s.byDiff.find(d => d.difficulty === 'Hard');
-  document.getElementById('statEasy').textContent = easy ? easy.c : 0;
-  document.getElementById('statMod').textContent = mod ? mod.c : 0;
-  document.getElementById('statHard').textContent = hard ? hard.c : 0;
-}
-
-async function loadTrails() {
-  const search = document.getElementById('searchInput').value;
-  const diff = document.getElementById('filterDiff').value;
-  const lake = document.getElementById('filterLake').value;
-  const done = document.getElementById('filterDone').value;
-  const params = new URLSearchParams();
-  if (search) params.set('search', search);
-  if (diff) params.set('difficulty', diff);
-  if (lake !== '') params.set('has_lake', lake);
-  if (done !== '') params.set('completed', done);
+// Fetch every trail from the server (no filter params) and store in allTrails.
+// Client-side filtering then slices the in-memory cache — no extra round-trips.
+async function fetchAllTrails() {
   try {
-    const res = await fetch(`${API}/trails?${params}`);
+    const res = await fetch(`${API}/trails`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    trails = await res.json();
+    allTrails = await res.json();
   } catch(err) {
-    trails = [];
+    allTrails = [];
     const empty = document.getElementById('emptyState');
     empty.style.display = 'block';
     empty.innerHTML = `<div class="empty-icon">⚠️</div><p style="color:#dc2626;font-weight:600">Could not reach the server.</p><p style="margin-top:6px">Make sure it is running:<br><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">npm run hiking</code></p>`;
     return;
   }
-  sortAndRender();
-  updateMapMarkers(trails);
+  updateStats();
+  applyFilters();                  // refresh filtered table view
+  updateMapMarkers(allTrails);     // map always shows the full 45
 }
 
-function applyFilters() { loadTrails(); }
+function updateStats() {
+  document.getElementById('statTotal').textContent     = allTrails.length;
+  document.getElementById('statCompleted').textContent = allTrails.filter(t => t.completed).length;
+  document.getElementById('statLake').textContent      = allTrails.filter(t => t.has_lake).length;
+  document.getElementById('statEasy').textContent      = allTrails.filter(t => t.difficulty === 'Easy').length;
+  document.getElementById('statMod').textContent       = allTrails.filter(t => t.difficulty === 'Moderate').length;
+  document.getElementById('statHard').textContent      = allTrails.filter(t => t.difficulty === 'Hard').length;
+}
+
+// Pure client-side: filter allTrails → trails → re-render table.
+// Map is not touched here; it always shows the complete set.
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const diff   = document.getElementById('filterDiff').value;
+  const lake   = document.getElementById('filterLake').value;
+  const done   = document.getElementById('filterDone').value;
+
+  trails = allTrails.filter(t => {
+    if (search) {
+      const hay = `${t.trail_name} ${t.nearest_town || ''} ${t.water_feature_details || ''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (diff && t.difficulty !== diff) return false;
+    if (lake !== '' && t.has_lake !== Number(lake)) return false;
+    if (done !== '' && t.completed !== Number(done)) return false;
+    return true;
+  });
+  sortAndRender();
+}
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1;
@@ -715,8 +725,7 @@ function esc(str) {
 
 async function toggleComplete(id) {
   await fetch(`${API}/trails/${id}/complete`, { method: 'PATCH' });
-  await loadTrails();
-  await loadStats();
+  await fetchAllTrails();
 }
 
 function openModal(trail = null) {
@@ -771,8 +780,7 @@ async function saveTrail() {
   if (!res.ok) { toast('Save failed', 'error'); return; }
   toast(id ? 'Trail updated!' : 'Trail added!', 'success');
   closeModal();
-  await loadTrails();
-  await loadStats();
+  await fetchAllTrails();
 }
 
 function openDeleteConfirm(id, name) {
@@ -786,8 +794,7 @@ async function confirmDelete() {
   await fetch(`${API}/trails/${deleteTargetId}`, { method: 'DELETE' });
   toast('Trail deleted', 'success');
   closeConfirm();
-  await loadTrails();
-  await loadStats();
+  await fetchAllTrails();
 }
 
 function toast(msg, type = '') {
@@ -853,15 +860,13 @@ async function submitLog() {
   document.getElementById('logNote').value = '';
   toast('Hike logged!', 'success');
   await refreshLogList();
-  await loadTrails();
-  await loadStats();
+  await fetchAllTrails();
 }
 
 async function deleteLog(logId) {
   await fetch(`${API}/logs/${logId}`, { method: 'DELETE' });
   await refreshLogList();
-  await loadTrails();
-  await loadStats();
+  await fetchAllTrails();
 }
 
 // --- Map ---
@@ -959,8 +964,7 @@ document.addEventListener('keydown', e => {
 });
 
 initMap();
-loadStats();
-loadTrails();
+fetchAllTrails();
 </script>
 </body>
 </html>
