@@ -7,7 +7,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "hiking": "node hiking-server.js",
-    "hiking:dev": "nodemon hiking-server.js"
+    "hiking:dev": "nodemon hiking-server.js",
+    "rates": "node rates-server.js",
+    "rates:dev": "nodemon rates-server.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",

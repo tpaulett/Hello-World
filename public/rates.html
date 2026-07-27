@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RateAPI — Benchmark Rates</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>%</text></svg>">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --good: #006300;
+    --critical: #d03b3b;
+    --warning: #fab219;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --good: #0ca30c;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --series-4: #c98500;
+      --series-5: #d55181;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --good: #0ca30c;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  header .titles { flex: 1; min-width: 240px; }
+  h1 { font-size: 1.5rem; font-weight: 650; letter-spacing: -.02em; }
+  .subtitle { color: var(--text-secondary); font-size: .875rem; margin-top: 2px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .75rem; font-weight: 600; letter-spacing: .02em;
+    padding: 5px 10px; border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .badge.sample { background: rgba(250,178,25,.14); color: var(--text-primary); }
+  .badge.live { background: rgba(12,163,12,.14); color: var(--text-primary); }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .badge.sample .dot { background: var(--warning); }
+  .badge.live .dot { background: var(--good); }
+
+  .notice {
+    background: rgba(250,178,25,.10);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warning);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .8125rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .notice strong { color: var(--text-primary); }
+  .notice.error { background: rgba(208,59,59,.10); border-left-color: var(--critical); }
+
+  button {
+    font: inherit; cursor: pointer;
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 12px;
+    font-size: .8125rem;
+  }
+  button:hover { background: var(--page); }
+  button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
+
+  .controls {
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 18px;
+  }
+  .control-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .control-label { font-size: .75rem; color: var(--text-muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+
+  .chip { display: inline-flex; align-items: center; gap: 7px; }
+  .chip .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .chip[aria-pressed="false"] { opacity: .45; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile .accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .tile .name { font-size: .8125rem; color: var(--text-secondary); font-weight: 550; }
+  .tile .value { font-size: 1.875rem; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; }
+  .tile .value .unit { font-size: 1rem; font-weight: 500; color: var(--text-secondary); margin-left: 1px; }
+  .tile .meta { font-size: .75rem; color: var(--text-muted); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .delta { font-weight: 600; }
+  .delta.down { color: var(--good); }
+  .delta.up { color: var(--critical); }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .card h2 { font-size: 1rem; font-weight: 600; }
+  .card .hint { font-size: .8125rem; color: var(--text-muted); }
+
+  .chart-holder { position: relative; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .axis-line { stroke: var(--axis); stroke-width: 1; }
+  .tick { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .series-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .end-label { font-size: 11px; font-weight: 600; }
+  .crosshair { stroke: var(--axis); stroke-width: 1; stroke-dasharray: 3 3; }
+
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: .75rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    min-width: 150px;
+    opacity: 0; transition: opacity .1s;
+  }
+  .tooltip.on { opacity: 1; }
+  .tooltip .tt-date { font-weight: 650; margin-bottom: 5px; color: var(--text-primary); }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 7px; justify-content: space-between; margin-top: 2px; }
+  .tooltip .tt-name { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .tooltip .tt-sw { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .tooltip .tt-val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: .8125rem; color: var(--text-secondary); }
+  .legend-item .swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+  td { font-variant-numeric: tabular-nums; }
+  td .name-cell { display: flex; align-items: center; gap: 8px; }
+  td .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .table-scroll { overflow-x: auto; }
+
+  details.raw { margin-top: 4px; }
+  details.raw summary { cursor: pointer; font-size: .8125rem; color: var(--text-secondary); padding: 4px 0; }
+  pre {
+    background: var(--page);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: .75rem;
+    line-height: 1.5;
+    margin-top: 8px;
+    max-height: 380px;
+  }
+
+  .skeleton { color: var(--text-muted); font-size: .875rem; padding: 28px 0; text-align: center; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="titles">
+      <h1>Benchmark Rates</h1>
+      <p class="subtitle">RateAPI <code>/v1/benchmarks</code> · <span id="asOf">—</span></p>
+    </div>
+    <span class="badge" id="sourceBadge"><span class="dot"></span><span id="sourceText">loading</span></span>
+    <button id="themeToggle" title="Toggle light/dark">◐</button>
+    <button id="refreshBtn">Refresh</button>
+  </header>
+
+  <div class="notice hidden" id="notice"></div>
+
+  <div class="controls">
+    <div class="control-group" id="rangeGroup">
+      <span class="control-label">Range</span>
+      <button class="range-btn" data-days="30">30d</button>
+      <button class="range-btn" data-days="90">90d</button>
+      <button class="range-btn" data-days="180" aria-pressed="true">180d</button>
+    </div>
+    <div class="control-group" id="productChips">
+      <span class="control-label">Products</span>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 id="chartTitle">APR trend</h2>
+      <span class="hint" id="chartHint"></span>
+    </div>
+    <div class="chart-holder" id="chartHolder">
+      <div class="skeleton" id="chartSkeleton">Loading…</div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>All benchmarks</h2>
+      <span class="hint">Same data as the chart, as a table.</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th><th>APR</th><th>Rate</th><th>30-day change</th>
+            <th>Avg. fees</th><th>Lenders</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <details class="raw">
+      <summary>Raw API response</summary>
+      <pre id="rawJson">—</pre>
+    </details>
+  </div>
+
+</div>
+
+<script>
+const SERIES_VARS = ['--series-1','--series-2','--series-3','--series-4','--series-5'];
+const state = { payload: null, series: [], days: 180, hidden: new Set() };
+
+const el = (id) => document.getElementById(id);
+const cssColor = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmtPct = (n) => n.toFixed(2) + '%';
+
+/* ---------- Normalizing the response -------------------------------------
+   The exact /v1/benchmarks shape is not pinned down yet, so read the common
+   spellings rather than one hard-coded path. Anything unmapped falls through
+   to the raw JSON panel instead of being silently dropped.                  */
+
+function pick(obj, keys) {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return undefined;
+}
+
+function toNumber(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = parseFloat(v.replace('%', ''));
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
+}
+
+function normalize(root) {
+  const list = Array.isArray(root) ? root
+    : pick(root, ['benchmarks', 'results', 'items', 'rates', 'data']) || [];
+  if (!Array.isArray(list)) return [];
+
+  return list.map((raw, i) => {
+    const label = pick(raw, ['label', 'name', 'display_name', 'product_name', 'product_type', 'product']) || `Series ${i + 1}`;
+    const apr = toNumber(pick(raw, ['apr', 'average_apr', 'avg_apr', 'mean_apr', 'apr_pct', 'rate']));
+
+    const rawHistory = pick(raw, ['history', 'series', 'timeseries', 'points', 'trend']) || [];
+    const history = (Array.isArray(rawHistory) ? rawHistory : []).map((p) => ({
+      date: pick(p, ['date', 'as_of', 'day', 'timestamp']),
+      apr: toNumber(pick(p, ['apr', 'average_apr', 'value', 'rate'])),
+    })).filter((p) => p.date && p.apr !== undefined);
+
+    return {
+      key: pick(raw, ['product_type', 'id', 'key']) || label,
+      label: String(label).replace(/_/g, ' '),
+      apr,
+      rate: toNumber(pick(raw, ['rate', 'note_rate', 'base_rate'])),
+      change30: toNumber(pick(raw, ['change_30d', 'change30d', 'delta_30d'])),
+      fees: toNumber(pick(raw, ['avg_fees', 'fees', 'average_fees'])),
+      lenders: toNumber(pick(raw, ['lender_count', 'lenders', 'count'])),
+      history,
+      color: SERIES_VARS[i % SERIES_VARS.length],
+    };
+  }).filter((s) => s.apr !== undefined || s.history.length);
+}
+
+/* ---------- Fetch --------------------------------------------------------- */
+
+async function load() {
+  el('refreshBtn').disabled = true;
+  try {
+    const res = await fetch('/api/benchmarks');
+    const body = await res.json();
+
+    if (!res.ok) {
+      showNotice(`<strong>${body.error || 'Request failed'}</strong> ${body.detail || ''}`, true);
+      el('chartSkeleton').textContent = 'No data.';
+      el('rawJson').textContent = JSON.stringify(body, null, 2);
+      return;
+    }
+
+    state.payload = body;
+    state.series = normalize(body.data);
+    el('rawJson').textContent = JSON.stringify(body.data, null, 2);
+    setBadge(body.source);
+    el('asOf').textContent = body.data?.as_of
+      ? `as of ${body.data.as_of}`
+      : `fetched ${new Date(body.fetched_at).toLocaleString()}`;
+
+    if (!state.series.length) {
+      showNotice('<strong>Response received, but no benchmark rows were recognized.</strong> The raw JSON is below — the field mapping in <code>normalize()</code> needs updating to match.', true);
+      el('chartSkeleton').textContent = 'Nothing to plot.';
+      return;
+    }
+
+    buildChips();
+    render();
+  } catch (err) {
+    showNotice(`<strong>Could not load data.</strong> ${err.message}`, true);
+  } finally {
+    el('refreshBtn').disabled = false;
+  }
+}
+
+function setBadge(source) {
+  const badge = el('sourceBadge');
+  badge.classList.add(source === 'live' ? 'live' : 'sample');
+  el('sourceText').textContent = source === 'live' ? 'Live data' : 'Sample data';
+  if (source !== 'live') {
+    const why = state.payload?.reason ? ` (${state.payload.reason})` : '';
+    showNotice(`<strong>These are made-up numbers, not real rates.</strong> The server is serving the built-in fixture${why}. Set <code>RATEAPI_KEY</code> in <code>.env</code> and restart for live data.`);
+  }
+}
+
+function showNotice(html, isError) {
+  const n = el('notice');
+  n.innerHTML = html;
+  n.classList.remove('hidden');
+  n.classList.toggle('error', Boolean(isError));
+}
+
+/* ---------- Controls ------------------------------------------------------ */
+
+function buildChips() {
+  const box = el('productChips');
+  box.querySelectorAll('.chip').forEach((c) => c.remove());
+  state.series.forEach((s) => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.setAttribute('aria-pressed', String(!state.hidden.has(s.key)));
+    b.innerHTML = `<span class="swatch" style="background:var(${s.color})"></span>${s.label}`;
+    b.onclick = () => {
+      if (state.hidden.has(s.key)) state.hidden.delete(s.key);
+      else if (visible().length > 1) state.hidden.add(s.key);
+      b.setAttribute('aria-pressed', String(!state.hidden.has(s.key)));
+      render();
+    };
+    box.appendChild(b);
+  });
+}
+
+const visible = () => state.series.filter((s) => !state.hidden.has(s.key));
+
+document.querySelectorAll('.range-btn').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.range-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
+    state.days = Number(btn.dataset.days);
+    render();
+  };
+});
+
+el('refreshBtn').onclick = load;
+el('themeToggle').onclick = () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    || (!document.documentElement.hasAttribute('data-theme')
+        && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  render();
+};
+
+/* ---------- Render -------------------------------------------------------- */
+
+function render() {
+  renderTiles();
+  renderChart();
+  renderTable();
+  renderLegend();
+}
+
+function renderTiles() {
+  el('tiles').innerHTML = state.series.map((s) => {
+    const d = s.change30;
+    const deltaHtml = d === undefined ? ''
+      : `<span class="delta ${d < 0 ? 'down' : 'up'}">${d < 0 ? '▼' : '▲'} ${Math.abs(d).toFixed(2)} pts / 30d</span>`;
+    const lenders = s.lenders !== undefined ? `<span>${s.lenders.toLocaleString()} lenders</span>` : '';
+    return `
+      <div class="tile">
+        <div class="accent" style="background:var(${s.color})"></div>
+        <div class="name">${s.label}</div>
+        <div class="value">${s.apr !== undefined ? s.apr.toFixed(2) : '—'}<span class="unit">% APR</span></div>
+        <div class="meta">${deltaHtml}${lenders}</div>
+      </div>`;
+  }).join('');
+}
+
+function windowed(series) {
+  if (!series.history.length) return [];
+  const cutoff = Date.now() - state.days * 86400000;
+  const pts = series.history.filter((p) => new Date(p.date).getTime() >= cutoff);
+  return pts.length >= 2 ? pts : series.history.slice(-2);
+}
+
+function renderChart() {
+  const shown = visible();
+  const withHistory = shown.filter((s) => windowed(s).length >= 2);
+  el('chartSkeleton').classList.add('hidden');
+  // The range presets only mean something when the payload carries history.
+  el('rangeGroup').classList.toggle('hidden', !withHistory.length);
+
+  if (withHistory.length) {
+    el('chartTitle').textContent = `APR trend · last ${state.days} days`;
+    el('chartHint').textContent = 'Hover for values at a date.';
+    drawLines(withHistory);
+  } else {
+    el('chartTitle').textContent = 'Current APR by product';
+    el('chartHint').textContent = 'No history in the response — showing latest values.';
+    drawBars(shown.filter((s) => s.apr !== undefined));
+  }
+}
+
+function svgShell(h) {
+  const holder = el('chartHolder');
+  holder.querySelector('svg')?.remove();
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'chart');
+  svg.setAttribute('viewBox', `0 0 900 ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  holder.appendChild(svg);
+  return svg;
+}
+
+// Round tick values (1 / 2 / 2.5 / 5 × 10ⁿ) so the axis reads in whole steps.
+function niceTicks(min, max, target = 5) {
+  const raw = (max - min) / (target - 1);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find((m) => m * mag >= raw) * mag;
+  const start = Math.floor(min / step) * step;
+  const out = [];
+  for (let v = start; v < max + step / 2; v += step) out.push(Number(v.toFixed(6)));
+  return out.length >= 2 ? out : [min, max];
+}
+
+function node(tag, attrs, text) {
+  const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function drawLines(series) {
+  const W = 900, H = 380, M = { t: 16, r: 96, b: 34, l: 50 };
+  const svg = svgShell(H);
+
+  const dates = [...new Set(series.flatMap((s) => windowed(s).map((p) => p.date)))].sort();
+  const values = series.flatMap((s) => windowed(s).map((p) => p.apr));
+  const pad = (Math.max(...values) - Math.min(...values)) * 0.12 || 0.4;
+  const ticks = niceTicks(Math.min(...values) - pad, Math.max(...values) + pad);
+  const yMin = ticks[0], yMax = ticks[ticks.length - 1];
+
+  const x = (date) => M.l + (dates.indexOf(date) / Math.max(1, dates.length - 1)) * (W - M.l - M.r);
+  const y = (v) => M.t + (1 - (v - yMin) / (yMax - yMin)) * (H - M.t - M.b);
+
+  ticks.forEach((v) => {
+    const yy = y(v);
+    svg.appendChild(node('line', { class: 'grid-line', x1: M.l, x2: W - M.r, y1: yy, y2: yy }));
+    svg.appendChild(node('text', { class: 'tick', x: M.l - 8, y: yy + 4, 'text-anchor': 'end' }, v.toFixed(1) + '%'));
+  });
+  svg.appendChild(node('line', { class: 'axis-line', x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b }));
+
+  // X ticks — first, middle, last
+  [0, Math.floor((dates.length - 1) / 2), dates.length - 1].forEach((i) => {
+    const d = dates[i];
+    if (!d) return;
+    const label = new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    svg.appendChild(node('text', {
+      class: 'tick', x: x(d), y: H - M.b + 18,
+      'text-anchor': i === 0 ? 'start' : i === dates.length - 1 ? 'end' : 'middle',
+    }, label));
+  });
+
+  // Series
+  const labelSlots = [];
+  series.forEach((s) => {
+    const pts = windowed(s);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.apr).toFixed(1)}`).join(' ');
+    svg.appendChild(node('path', { class: 'series-line', d, stroke: `var(${s.color})` }));
+
+    const last = pts[pts.length - 1];
+    // Direct-label the line ends when there is room; nudge apart on collision.
+    if (series.length <= 4) {
+      let ly = y(last.apr) + 4;
+      while (labelSlots.some((v) => Math.abs(v - ly) < 13)) ly += 13;
+      labelSlots.push(ly);
+      svg.appendChild(node('text', {
+        class: 'end-label', x: x(last.date) + 10, y: ly, fill: `var(${s.color})`,
+      }, `${s.label} ${last.apr.toFixed(2)}%`));
+    }
+    svg.appendChild(node('circle', {
+      cx: x(last.date), cy: y(last.apr), r: 4.5,
+      fill: `var(${s.color})`, stroke: 'var(--surface-1)', 'stroke-width': 2,
+    }));
+  });
+
+  attachCrosshair(svg, { series, dates, x, y, W, H, M });
+}
+
+function attachCrosshair(svg, ctx) {
+  const { series, dates, x, y, W, H, M } = ctx;
+  const tip = el('tooltip');
+  const line = node('line', { class: 'crosshair', y1: M.t, y2: H - M.b, x1: 0, x2: 0, opacity: 0 });
+  svg.appendChild(line);
+  const dots = series.map((s) => {
+    const c = node('circle', { r: 4.5, fill: `var(${s.color})`, stroke: 'var(--surface-1)', 'stroke-width': 2, opacity: 0 });
+    svg.appendChild(c);
+    return c;
+  });
+
+  const hit = node('rect', { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: 'transparent' });
+  svg.appendChild(hit);
+
+  hit.addEventListener('mousemove', (ev) => {
+    const box = svg.getBoundingClientRect();
+    const px = ((ev.clientX - box.left) / box.width) * W;
+    const ratio = (px - M.l) / (W - M.l - M.r);
+    const idx = Math.max(0, Math.min(dates.length - 1, Math.round(ratio * (dates.length - 1))));
+    const date = dates[idx];
+
+    line.setAttribute('x1', x(date));
+    line.setAttribute('x2', x(date));
+    line.setAttribute('opacity', 1);
+
+    const rows = [];
+    series.forEach((s, i) => {
+      const p = windowed(s).find((q) => q.date === date);
+      if (!p) { dots[i].setAttribute('opacity', 0); return; }
+      dots[i].setAttribute('cx', x(date));
+      dots[i].setAttribute('cy', y(p.apr));
+      dots[i].setAttribute('opacity', 1);
+      rows.push(`<div class="tt-row"><span class="tt-name"><span class="tt-sw" style="background:var(${s.color})"></span>${s.label}</span><span class="tt-val">${fmtPct(p.apr)}</span></div>`);
+    });
+
+    tip.innerHTML = `<div class="tt-date">${new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>${rows.join('')}`;
+    tip.classList.add('on');
+    const holder = el('chartHolder').getBoundingClientRect();
+    const left = ev.clientX - holder.left + 16;
+    tip.style.left = Math.min(left, holder.width - tip.offsetWidth - 8) + 'px';
+    tip.style.top = (ev.clientY - holder.top - 12) + 'px';
+  });
+
+  hit.addEventListener('mouseleave', () => {
+    tip.classList.remove('on');
+    line.setAttribute('opacity', 0);
+    dots.forEach((d) => d.setAttribute('opacity', 0));
+  });
+}
+
+function drawBars(series) {
+  const rowH = 42, W = 900, M = { t: 10, r: 70, b: 10, l: 190 };
+  const H = M.t + M.b + series.length * rowH;
+  const svg = svgShell(H);
+  const max = Math.max(...series.map((s) => s.apr)) * 1.1;
+  const scale = (v) => (v / max) * (W - M.l - M.r);
+  const tip = el('tooltip');
+
+  series.forEach((s, i) => {
+    const yTop = M.t + i * rowH + 8;
+    const h = rowH - 18;
+    svg.appendChild(node('text', {
+      class: 'tick', x: M.l - 12, y: yTop + h / 2 + 4, 'text-anchor': 'end',
+      fill: 'var(--text-secondary)', 'font-size': 12,
+    }, s.label));
+
+    const bar = node('rect', {
+      x: M.l, y: yTop, width: Math.max(2, scale(s.apr)), height: h,
+      rx: 4, fill: `var(${s.color})`,
+    });
+    svg.appendChild(bar);
+
+    svg.appendChild(node('text', {
+      class: 'end-label', x: M.l + scale(s.apr) + 10, y: yTop + h / 2 + 4,
+      fill: 'var(--text-secondary)',
+    }, fmtPct(s.apr)));
+
+    bar.addEventListener('mousemove', (ev) => {
+      tip.innerHTML = `<div class="tt-date">${s.label}</div><div class="tt-row"><span class="tt-name">APR</span><span class="tt-val">${fmtPct(s.apr)}</span></div>`;
+      tip.classList.add('on');
+      const holder = el('chartHolder').getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - holder.left + 16, holder.width - tip.offsetWidth - 8) + 'px';
+      tip.style.top = (ev.clientY - holder.top - 12) + 'px';
+    });
+    bar.addEventListener('mouseleave', () => tip.classList.remove('on'));
+  });
+}
+
+function renderLegend() {
+  const shown = visible();
+  el('legend').innerHTML = shown.length < 2 ? '' : shown.map((s) =>
+    `<span class="legend-item"><span class="swatch" style="background:var(${s.color})"></span>${s.label}</span>`
+  ).join('');
+}
+
+function renderTable() {
+  el('tableBody').innerHTML = state.series.map((s) => {
+    const d = s.change30;
+    const delta = d === undefined ? '—'
+      : `<span class="delta ${d < 0 ? 'down' : 'up'}">${d > 0 ? '+' : ''}${d.toFixed(2)}</span>`;
+    return `<tr>
+      <td><div class="name-cell"><span class="swatch" style="background:var(${s.color})"></span>${s.label}</div></td>
+      <td>${s.apr !== undefined ? fmtPct(s.apr) : '—'}</td>
+      <td>${s.rate !== undefined ? fmtPct(s.rate) : '—'}</td>
+      <td>${delta}</td>
+      <td>${s.fees !== undefined ? '$' + s.fees.toLocaleString() : '—'}</td>
+      <td>${s.lenders !== undefined ? s.lenders.toLocaleString() : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+load();
+</script>
+</body>
+</html>
