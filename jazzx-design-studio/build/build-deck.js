@@ -509,7 +509,7 @@ function bullets(s, items, o) {
 /* =============================================================== SLIDE 14 */
 {
   const s = slide();
-  title(s, 'The framework pack', '18 one-pagers, each with purpose, RACI, decisions, framework, templates, cadence, definition of done and risks.');
+  title(s, 'The framework pack', '22 one-pagers, each with purpose, RACI, decisions, framework, templates, cadence, definition of done and risks.');
 
   const groups = [
     ['Program', ['01  Master 90-Day Plan']],
@@ -517,27 +517,28 @@ function bullets(s, items, o) {
     ['Logistics — Define Proof of Value', ['05  Define What Value Looks Like', '06  Baseline, Targets & Thresholds', '07  Go / No-Go Decision Criteria']],
     ['Execution — Launch Studio', ['08  Launch Design Studio', '09  Small Cross-Functional Team', '10  Loan Types & Market Selection', '11  Studio vs. Current Workflow', '12  Weekly Feedback Loop', '13  Observing Real Underwriting']],
     ['Execution — Tune in Jazz', ['14  Tune in Jazz', '15  Refining Prompts & Recognition', '16  Documenting Improvement', '17  Next Technology Changes', '18  Builder Studio & Nuggets']],
+    ['Technology — Integrate & Deploy', ['19  Triggering Loans to Jazz', '20  LOS Extraction & Write-Back', '21  MU Conditions Integration', '22  Minimum-Change Deployment']],
   ];
 
-  const cols = [[0, 1], [2, 3], [4]];
+  const cols = [[0, 1], [2, 3], [4, 5]];
   const w = (CW - 2 * 0.3) / 3;
   cols.forEach((idxs, ci) => {
     const x = M + ci * (w + 0.3);
     let y = 1.95;
     idxs.forEach((gi) => {
       const [name, items] = groups[gi];
-      const h = 0.72 + items.length * 0.32;
+      const h = 0.68 + items.length * 0.28;
       card(s, { x, y, w, h, fill: ci === 2 ? ICE : 'F7F9FA' });
       txt(s, name, { x: x + 0.26, y: y + 0.16, w: w - 0.52, h: 0.34, head: true, size: 12.5, bold: true, color: TEAL });
       items.forEach((it, k) => {
-        txt(s, it, { x: x + 0.26, y: y + 0.62 + k * 0.3, w: w - 0.52, h: 0.28, size: 11.5, color: NAVY });
+        txt(s, it, { x: x + 0.26, y: y + 0.58 + k * 0.28, w: w - 0.52, h: 0.26, size: 11, color: NAVY });
       });
-      y += h + 0.28;
+      y += h + 0.26;
     });
   });
 
   txt(s, 'Every template in the pack has fill-in fields rather than assumed answers — the slice, the roster, the thresholds and the decision rule are yours to set at G0.',
-    { x: M, y: 6.55, w: CW, h: 0.4, size: 12.5, italic: true, color: MUTED });
+    { x: M, y: 6.32, w: CW, h: 0.4, size: 12.5, italic: true, color: MUTED });
 }
 
 /* =============================================================== SLIDE 15 */

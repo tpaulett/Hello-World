@@ -60,9 +60,11 @@ function bullet(text, level = 0) {
   });
 }
 
-function numbered(text, level = 0) {
+function numbered(text, level = 0, instance = 0) {
   return new Paragraph({
-    numbering: { reference: 'steps', level },
+    // A distinct `instance` per list; without it docx continues one shared sequence
+    // across every ordered list in the document (decisions 1-5, then steps 6, 7...).
+    numbering: { reference: 'steps', level, instance },
     spacing: { after: 80, line: 276 },
     children: parseInline(text),
   });
@@ -212,9 +214,13 @@ function renderDoc(doc) {
     c.push(new Paragraph({ spacing: { after: 120 }, children: [] }));
   }
 
+  // Each ordered list gets its own numbering instance so all of them start at 1.
+  let listInstance = 0;
+
   if (doc.decisions && doc.decisions.length) {
     c.push(sectionHeading('Decisions this document makes'));
-    doc.decisions.forEach((d) => c.push(numbered(d)));
+    const inst = listInstance++;
+    doc.decisions.forEach((d) => c.push(numbered(d, 0, inst)));
   }
 
   c.push(sectionHeading('The framework'));
@@ -225,7 +231,10 @@ function renderDoc(doc) {
       if (typeof b === 'string') c.push(bullet(b));
       else c.push(bullet(b.text, b.level || 0));
     });
-    (blk.steps || []).forEach((s) => c.push(numbered(s)));
+    if (blk.steps && blk.steps.length) {
+      const inst = listInstance++;
+      blk.steps.forEach((st) => c.push(numbered(st, 0, inst)));
+    }
     (blk.tables || []).forEach((t) => c.push(...tableBlock(t)));
   });
 

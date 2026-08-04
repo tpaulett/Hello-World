@@ -12,7 +12,12 @@ const fs = require('fs');
 const path = require('path');
 const { write } = require('./render');
 
-const groups = ['./content-program', './content-logistics', './content-execution'];
+const groups = [
+  './content-program',
+  './content-logistics',
+  './content-execution',
+  './content-technology',
+];
 
 async function main() {
   const outDir = path.resolve(process.argv[2] || path.join(__dirname, '..', 'one-pagers'));

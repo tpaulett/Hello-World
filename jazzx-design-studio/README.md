@@ -1,6 +1,6 @@
 # JazzX Design Studio — 90-Day Implementation Framework
 
-A lender-side framework for standing up a 90-day Design Studio with JazzX: 18 one-pagers
+A lender-side framework for standing up a 90-day Design Studio with JazzX: 22 one-pagers
 plus an executive summary deck.
 
 **Posture:** written from the perspective of the lender adopting JazzX (JazzX is the vendor).
@@ -12,7 +12,7 @@ decision, graduating to a narrow live slice only after Gate 2.
 | File | What it is |
 |---|---|
 | `JazzX-Design-Studio-Executive-Summary.pptx` | 15-slide exec deck — gate model, scope, measurement, decision rule, asks |
-| `one-pagers/*.docx` | 18 one-pagers, each 4–6 pages |
+| `one-pagers/*.docx` | 22 one-pagers, each 4–6 pages |
 
 ## The gate model
 
@@ -60,6 +60,14 @@ makes · The framework · Artifacts & templates · Cadence · Definition of done
 - `17` Next Technology Changes & Build Start
 - `18` Builder Studio & Knowledge Nuggets
 
+**Technology — Use Current Integrations**
+- `19` Enabling Users to Trigger Loans to Jazz
+- `20` LOS Data Extraction & the Write-Back Decision
+- `21` MU (Conditions Management) Integration
+
+**Technology — Deploy Technology Changes**
+- `22` Minimum-Change Deployment to Production
+
 ## Assumptions
 
 These are stated so they can be corrected rather than silently inherited:
@@ -70,6 +78,12 @@ These are stated so they can be corrected rather than silently inherited:
 - Governance assumes an existing model risk / third-party risk function; `02` includes a
   fallback for lenders without one.
 - Sample sizing works to **150–200 shadow loans**; `06` shows the math so it can be flexed.
+- The LOS is treated as **platform-neutral** — `20` is organised around capabilities and
+  decision criteria rather than named vendor APIs.
+- **MU** is the internal conditions management system. `21` keeps it the sole system of
+  record for conditions throughout.
+- **Write-back is an open question**, not a foregone conclusion. `20` frames it as a
+  decision to be taken at G2 with a default answer of no.
 
 ## Rebuilding
 
@@ -81,6 +95,7 @@ build/render.js            shared one-pager template (docx)
 build/content-program.js   one-pager 01
 build/content-logistics.js one-pagers 02–07
 build/content-execution.js one-pagers 08–18
+build/content-technology.js one-pagers 19–22
 build/build.js             renders all one-pagers to one-pagers/
 build/build-deck.js        renders the executive deck (pptxgenjs)
 ```
