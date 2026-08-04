@@ -509,36 +509,37 @@ function bullets(s, items, o) {
 /* =============================================================== SLIDE 14 */
 {
   const s = slide();
-  title(s, 'The framework pack', '22 one-pagers, each with purpose, RACI, decisions, framework, templates, cadence, definition of done and risks.');
+  title(s, 'The framework pack', '29 one-pagers, each with purpose, RACI, decisions, framework, templates, cadence, definition of done and risks.');
 
   const groups = [
     ['Program', ['01  Master 90-Day Plan']],
-    ['Logistics — Production Readiness', ['02  Governance Structure', '03  Borrower & Internal Communications', '04  Change Management']],
-    ['Logistics — Define Proof of Value', ['05  Define What Value Looks Like', '06  Baseline, Targets & Thresholds', '07  Go / No-Go Decision Criteria']],
-    ['Execution — Launch Studio', ['08  Launch Design Studio', '09  Small Cross-Functional Team', '10  Loan Types & Market Selection', '11  Studio vs. Current Workflow', '12  Weekly Feedback Loop', '13  Observing Real Underwriting']],
-    ['Execution — Tune in Jazz', ['14  Tune in Jazz', '15  Refining Prompts & Recognition', '16  Documenting Improvement', '17  Next Technology Changes', '18  Builder Studio & Nuggets']],
-    ['Technology — Integrate & Deploy', ['19  Triggering Loans to Jazz', '20  LOS Extraction & Write-Back', '21  MU Conditions Integration', '22  Minimum-Change Deployment']],
+    ['Commercial Alignment', ['23  Cost & Timeline', '24  Scope Definition', '25  Statement of Work', '26  Master Services Agreement']],
+    ['Production Readiness', ['02  Governance Structure', '03  Borrower & Internal Comms', '04  Change Management', '27  Security Review', '28  Access Controls']],
+    ['Define Proof of Value', ['05  Defining Value', '06  Baseline & Thresholds', '07  Go / No-Go Criteria']],
+    ['Launch Design Studio', ['08  Launch Design Studio', '09  Cross-Functional Team', '10  Loan Types & Market', '11  Studio vs. Current Workflow', '12  Weekly Feedback Loop', '13  Observing Real Underwriting']],
+    ['Tune in Jazz', ['14  Tune in Jazz', '15  Refining Prompts', '16  Documenting Improvement', '17  Next Technology Changes', '18  Builder Studio & Nuggets']],
+    ['Technology', ['19  Triggering Loans to Jazz', '20  Extraction & Write-Back', '21  MU Conditions Integration', '29  Minimizing Custom Dev', '22  Minimum-Change Deploy']],
   ];
 
-  const cols = [[0, 1], [2, 3], [4, 5]];
-  const w = (CW - 2 * 0.3) / 3;
+  const cols = [[0, 1], [2, 3], [4], [5, 6]];
+  const w = (CW - 3 * 0.24) / 4;
   cols.forEach((idxs, ci) => {
-    const x = M + ci * (w + 0.3);
+    const x = M + ci * (w + 0.24);
     let y = 1.95;
     idxs.forEach((gi) => {
       const [name, items] = groups[gi];
-      const h = 0.68 + items.length * 0.28;
-      card(s, { x, y, w, h, fill: ci === 2 ? ICE : 'F7F9FA' });
-      txt(s, name, { x: x + 0.26, y: y + 0.16, w: w - 0.52, h: 0.34, head: true, size: 12.5, bold: true, color: TEAL });
+      const h = 0.62 + items.length * 0.27;
+      card(s, { x, y, w, h, fill: ci === 3 ? ICE : 'F7F9FA' });
+      txt(s, name, { x: x + 0.24, y: y + 0.15, w: w - 0.48, h: 0.3, head: true, size: 11.5, bold: true, color: TEAL });
       items.forEach((it, k) => {
-        txt(s, it, { x: x + 0.26, y: y + 0.58 + k * 0.28, w: w - 0.52, h: 0.26, size: 11, color: NAVY });
+        txt(s, it, { x: x + 0.24, y: y + 0.5 + k * 0.27, w: w - 0.48, h: 0.25, size: 10, color: NAVY });
       });
-      y += h + 0.26;
+      y += h + 0.24;
     });
   });
 
   txt(s, 'Every template in the pack has fill-in fields rather than assumed answers — the slice, the roster, the thresholds and the decision rule are yours to set at G0.',
-    { x: M, y: 6.32, w: CW, h: 0.4, size: 12.5, italic: true, color: MUTED });
+    { x: M, y: 6.4, w: CW, h: 0.4, size: 12.5, italic: true, color: MUTED });
 }
 
 /* =============================================================== SLIDE 15 */

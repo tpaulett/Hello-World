@@ -17,6 +17,8 @@ const groups = [
   './content-logistics',
   './content-execution',
   './content-technology',
+  './content-commercial',
+  './content-readiness',
 ];
 
 async function main() {

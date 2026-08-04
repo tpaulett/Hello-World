@@ -679,4 +679,163 @@ module.exports = [
   ],
 },
 
+/* ------------------------------------------- 29 MINIMIZE CUSTOM DEV ----- */
+{
+  id: '29',
+  file: '29-Minimizing-Custom-Development',
+  section: 'Technology \u2014 Use Current Integrations',
+  title: 'Minimizing Custom Development',
+  strap: 'At studio volume, manual usually beats built \u2014 and deliberately so.',
+
+  purpose:
+    'To hold the line on custom development during the 90 days. Custom code is the change most likely to survive a no-go as pure sunk cost, the slowest thing to build, and the hardest to reverse. It is also where studios quietly lose weeks: not to one large build, but to a series of small, individually reasonable conveniences. This document gives the test to apply and the alternatives to reach for first.',
+
+  raci: [
+    ['IT / Engineering lead', '', 'A \u2014 owns the build decision'],
+    ['Studio Lead', '', 'R \u2014 holds the discipline day to day'],
+    ['Enterprise architecture', '', 'C \u2014 long-term coupling'],
+    ['Finance', '', 'C \u2014 build cost vs. studio value'],
+    ['Steering Committee', '', 'A \u2014 approves exceptions'],
+  ],
+
+  decisions: [
+    'The order of preference is **configure, then integrate, then extend, then build**. Building is the last resort, not the default engineering instinct.',
+    'At studio volume \u2014 roughly 200 loans over 90 days \u2014 **a manual process usually beats a built one.** A spreadsheet maintained by a named person is faster to stand up, easier to change, and free to discard.',
+    'Nothing is automated before it has been **done manually and understood.** Automating a process we cannot yet articulate encodes the misunderstanding and is expensive to unwind.',
+    'Every custom build is entered in the change register with a **removal path and cost** (one-pager 22), and Jazz-specific builds require Steering approval by exception.',
+    'Custom work to compensate for **poor source data quality is redirected to fixing the data**, which is no-regret work (one-pager 17).',
+  ],
+
+  framework: [
+    {
+      heading: 'The hierarchy',
+      tables: [{
+        columns: ['Option', 'Means', 'Try this first when', 'Cost of reversal'],
+        widths: [0.16, 0.28, 0.32, 0.24],
+        boldFirstCol: true,
+        rows: [
+          ['**Configure**', 'Settings in a system we already run',
+            'Always \u2014 exhaust this before anything else',
+            'Minutes'],
+          ['**Do it manually**', 'A person, a spreadsheet, a defined procedure',
+            'Volume is under a few hundred and the process is still being understood',
+            'None'],
+          ['**Integrate**', 'Connect existing capabilities with thin, standard plumbing',
+            'Two systems that already exist need to exchange data',
+            'Days'],
+          ['**Extend**', 'Use the product\u2019s own extension points',
+            'The capability exists but needs shaping to our process',
+            'Days to weeks'],
+          ['**Build**', 'New custom code we own and maintain',
+            'Nothing above works and the studio genuinely cannot run without it',
+            'Weeks, plus permanent maintenance'],
+        ],
+      }],
+    },
+    {
+      heading: 'Why manual wins at studio scale',
+      body: [
+        'Engineering instinct says automate the repetitive thing. At 200 loans over 90 days that instinct is usually wrong, and the arithmetic is worth doing out loud: a task taking three minutes per loan costs ten hours across the whole studio. Almost nothing can be built, tested and maintained for ten hours of effort.',
+        'The manual version also has a property the built version lacks \u2014 it can change on Monday morning when the weekly loop decides the process was wrong. During a studio, where the process is explicitly still being learned, that flexibility is worth more than the efficiency.',
+      ],
+      bullets: [
+        'Compute the total manual cost across 90 days before proposing a build \u2014 it is usually smaller than expected',
+        'A manual process makes the work **visible**, which is exactly what a studio is trying to observe',
+        'Manual steps are where the friction is felt, and felt friction is what drives good tuning priorities',
+        'If the studio scales, the manual process is the specification for what to build \u2014 written by people who have actually done it',
+      ],
+    },
+    {
+      heading: 'Where custom development creeps in',
+      tables: [{
+        columns: ['Creeps in as', 'Reach for instead'],
+        widths: [0.42, 0.58],
+        rows: [
+          ['A script to reformat data because the extraction is awkward', 'Fix the extraction specification, or accept the format and handle it in Jazz configuration'],
+          ['A workaround for poor document quality', 'Fix capture quality at the source \u2014 no-regret work that pays back regardless of the outcome'],
+          ['A dashboard to view studio metrics', 'A spreadsheet from the analyst\u2019s export, refreshed weekly for the feedback loop'],
+          ['Tooling to manage the comparison log', 'A structured spreadsheet or existing form tooling; the log is a data artifact, not a product'],
+          ['Bulk operations for the holdout and regression runs', 'Manual runs by the analyst; they happen three times in 90 days'],
+          ['A UI convenience for underwriters', 'Accept the friction, measure it, and put it in the scale business case where it belongs'],
+          ['Mapping logic between condition taxonomies', 'A maintained mapping table owned by Underwriting (one-pager 21) \u2014 data, not code'],
+        ],
+      }],
+    },
+    {
+      heading: 'Where custom development is legitimate',
+      body: [
+        'Some build is unavoidable; the discipline is keeping the list short, thin and reversible rather than pretending it can be zero.',
+      ],
+      bullets: [
+        'The trigger and cohort tagging (one-pager 19) \u2014 thin, and it is what makes the sample defensible',
+        'The extraction path (one-pager 20) \u2014 the studio cannot run without it',
+        'Event instrumentation for the baseline (one-pager 06) \u2014 no-regret; worth keeping regardless',
+        'Reconciliation checks on extraction fidelity \u2014 small, and they prevent a whole class of wasted tuning',
+        'The kill switch (one-pager 28) \u2014 non-negotiable',
+      ],
+    },
+  ],
+
+  tables: [
+    {
+      title: 'The build test \u2014 answer before writing any code',
+      columns: ['Question', 'If the answer is...'],
+      widths: [0.46, 0.54],
+      rows: [
+        ['Can this be configured in a system we already run?', 'Yes \u2192 configure. Stop here.'],
+        ['What does doing it manually cost across the full 90 days?', 'Under ~20 hours \u2192 do it manually'],
+        ['Have we done it manually at least once and understood it?', 'No \u2192 do that first; automating an unclear process encodes the confusion'],
+        ['Would we keep this if Jazz went away?', 'No \u2192 Steering approval required (one-pager 22)'],
+        ['Can it be removed in under a day?', 'No \u2192 reduce the scope until it can'],
+        ['Who maintains it after Day 90?', 'Nobody \u2192 do not build it'],
+      ],
+    },
+    {
+      title: 'Custom development register',
+      columns: ['Item', 'Why not configure or manual?', 'Effort', 'Removal path', 'Approved by'],
+      widths: [0.24, 0.28, 0.12, 0.2, 0.16],
+      rows: [
+        ['', '', '', '', ''],
+        ['', '', '', '', ''],
+        ['', '', '', '', ''],
+      ],
+      note: 'Feeds the change register in one-pager 22 and the stranded-cost figure presented at Gate 4.',
+    },
+  ],
+
+  cadence: [
+    ['At G0', 'Hierarchy and build test agreed with IT', 'Shared discipline'],
+    ['Weekly', 'Any proposed build tested against the six questions', 'Build decisions'],
+    ['Biweekly', 'Custom development register reviewed with IT', 'Footprint control'],
+    ['Day 45', 'Manual processes reviewed \u2014 any now worth building for scale?', 'Scale input'],
+    ['Day 80', 'Register totalled into the stranded-cost figure', 'Gate 4 input'],
+  ],
+
+  dod: [
+    'Build test applied and recorded for every custom item',
+    'Manual alternatives costed across 90 days before any build was approved',
+    'Custom register maintained with removal paths',
+    'No automation of a process that had not first been performed manually',
+    'Data quality problems fixed at source rather than coded around',
+  ],
+
+  risks: [
+    ['Small conveniences accumulate into a significant custom footprint',
+      'Every build passes the six-question test; register reviewed biweekly',
+      'IT lead'],
+    ['A process is automated before it is understood, encoding the misunderstanding',
+      'Manual-first rule; no automation without a performed manual run',
+      'Studio Lead'],
+    ['Engineering builds tooling because the manual work feels undignified',
+      'Total manual cost computed explicitly; ten hours rarely justifies a build',
+      'IT lead'],
+    ['Custom code written to compensate for bad source data',
+      'Redirected to source data remediation as no-regret work (one-pager 17)',
+      'IT lead'],
+    ['Built tooling has no owner after Day 90',
+      'Maintenance ownership named before approval, or the item is not built',
+      'IT lead'],
+  ],
+},
+
 ];

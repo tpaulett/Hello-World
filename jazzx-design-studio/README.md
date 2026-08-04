@@ -1,6 +1,6 @@
 # JazzX Design Studio — 90-Day Implementation Framework
 
-A lender-side framework for standing up a 90-day Design Studio with JazzX: 22 one-pagers
+A lender-side framework for standing up a 90-day Design Studio with JazzX: 29 one-pagers
 plus an executive summary deck.
 
 **Posture:** written from the perspective of the lender adopting JazzX (JazzX is the vendor).
@@ -12,7 +12,7 @@ decision, graduating to a narrow live slice only after Gate 2.
 | File | What it is |
 |---|---|
 | `JazzX-Design-Studio-Executive-Summary.pptx` | 15-slide exec deck — gate model, scope, measurement, decision rule, asks |
-| `one-pagers/*.docx` | 22 one-pagers, each 4–6 pages |
+| `one-pagers/*.docx` | 29 one-pagers, each 4–6 pages |
 
 ## The gate model
 
@@ -35,10 +35,18 @@ makes · The framework · Artifacts & templates · Cadence · Definition of done
 **Program**
 - `01` Master 90-Day Plan
 
+**Logistics — Commercial Alignment**
+- `23` Cost & Timeline
+- `24` Commercial Scope Definition
+- `25` Statement of Work (SOW)
+- `26` Master Services Agreement (MSA)
+
 **Logistics — Production Readiness**
 - `02` Governance Structure
 - `03` Borrower & Internal Communications
 - `04` Change Management
+- `27` Security Review
+- `28` Access Controls
 
 **Logistics — Define Proof of Value**
 - `05` Define What Value Looks Like
@@ -64,6 +72,7 @@ makes · The framework · Artifacts & templates · Cadence · Definition of done
 - `19` Enabling Users to Trigger Loans to Jazz
 - `20` LOS Data Extraction & the Write-Back Decision
 - `21` MU (Conditions Management) Integration
+- `29` Minimizing Custom Development
 
 **Technology — Deploy Technology Changes**
 - `22` Minimum-Change Deployment to Production
@@ -84,6 +93,8 @@ These are stated so they can be corrected rather than silently inherited:
   record for conditions throughout.
 - **Write-back is an open question**, not a foregone conclusion. `20` frames it as a
   decision to be taken at G2 with a default answer of no.
+- Commercial documents (`23`–`26`) are written as **negotiating positions and checklists**,
+  not as legal drafting. Legal owns the language; these set out what to insist on and why.
 
 ## Rebuilding
 
@@ -95,7 +106,9 @@ build/render.js            shared one-pager template (docx)
 build/content-program.js   one-pager 01
 build/content-logistics.js one-pagers 02–07
 build/content-execution.js one-pagers 08–18
-build/content-technology.js one-pagers 19–22
+build/content-technology.js one-pagers 19–22, 29
+build/content-commercial.js one-pagers 23–26
+build/content-readiness.js  one-pagers 27–28
 build/build.js             renders all one-pagers to one-pagers/
 build/build-deck.js        renders the executive deck (pptxgenjs)
 ```
