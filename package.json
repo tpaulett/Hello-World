@@ -9,7 +9,8 @@
     "hiking": "node hiking-server.js",
     "hiking:dev": "nodemon hiking-server.js",
     "benchmark": "node mortarbench/run.js",
-    "benchmark:llm": "node mortarbench/run.js --llm"
+    "benchmark:llm": "node mortarbench/run.js --llm",
+    "benchmark:vendors": "node mortarbench/run.js --vendor all"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",

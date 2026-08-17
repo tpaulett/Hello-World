@@ -14,16 +14,21 @@ const { scoreCase } = require('./score');
 const { calibrate } = require('./crit');
 const { buildBiasReport } = require('./biasReport');
 const ruleAgent = require('./agent/ruleAgent');
+const llmAgent = require('./agent/llmAgent');
 
 const SCORED_TYPES = ['income_verification', 'large_deposit_flag', 'nsf_check', 'dti_calculation', 'asset_reserve_check'];
 
 function parseArgs(argv) {
-  const args = { n: 20, biasN: 40, seed: 42, llm: false };
+  const args = { n: 20, biasN: 40, seed: 42, llm: false, vendors: null };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--n') args.n = Number(argv[++i]);
     else if (argv[i] === '--bias-n') args.biasN = Number(argv[++i]);
     else if (argv[i] === '--seed') args.seed = Number(argv[++i]);
     else if (argv[i] === '--llm') args.llm = true;
+    else if (argv[i] === '--vendor') {
+      args.llm = true;
+      args.vendors = argv[++i].split(',').map((s) => s.trim());
+    }
   }
   return args;
 }
@@ -109,20 +114,34 @@ async function main() {
   console.log();
 
   if (args.llm) {
-    console.log('== LLM agent (ANTHROPIC_API_KEY) ==');
-    const llmAgent = require('./agent/llmAgent');
-    try {
-      const llmResults = await runAgent(scoredCases, llmAgent.answerCase);
-      printPerTypeAccuracy(llmResults);
-      printCritSummary(llmResults);
-      const llmBias = await runAgent(biasCases, llmAgent.answerCase);
-      printBiasTable(buildBiasReport(llmBias), `${llmAgent.MODEL}:`);
-    } catch (err) {
-      console.error(`  LLM agent failed: ${err.message}`);
+    const requested = args.vendors ?? ['anthropic'];
+    const vendorKeys = requested.includes('all') ? llmAgent.VENDOR_KEYS : requested;
+
+    for (const requestedName of vendorKeys) {
+      const vendorKey = llmAgent.resolveVendorKey(requestedName);
+      if (!vendorKey) {
+        console.log(`== Unknown vendor "${requestedName}" (known: ${llmAgent.VENDOR_KEYS.join(', ')}) ==\n`);
+        continue;
+      }
+      const agent = llmAgent.createAgent(vendorKey);
+      console.log(`== ${agent.label} (${agent.model}) ==`);
+      if (!agent.hasKey) {
+        console.log(`  skipped: ${agent.envKey} is not set\n`);
+        continue;
+      }
+      try {
+        const llmResults = await runAgent(scoredCases, agent.answerCase);
+        printPerTypeAccuracy(llmResults);
+        printCritSummary(llmResults);
+        const llmBias = await runAgent(biasCases, agent.answerCase);
+        printBiasTable(buildBiasReport(llmBias), 'bias audit:');
+      } catch (err) {
+        console.error(`  ${agent.label} failed: ${err.message}`);
+      }
+      console.log();
     }
-    console.log();
   } else {
-    console.log('(pass --llm with ANTHROPIC_API_KEY set to also evaluate a real model)');
+    console.log(`(pass --vendor <${llmAgent.VENDOR_KEYS.join('|')}|all> with the matching API key set to evaluate real models, or --llm for Claude alone)`);
   }
 }
 
