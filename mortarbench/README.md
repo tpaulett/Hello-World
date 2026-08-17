@@ -38,7 +38,7 @@ Node.js with no external services required:
 |---|---|
 | Bank statement + ULAD instance | `data/generate.js` — seeded synthetic 60-day statement + applicant profile |
 | Mutation-function-based ground truth | `data/mutations.js` — one generator per question type, each computing its own known-correct answer |
-| Agent under test | `agent/ruleAgent.js` (deterministic baseline with the same *class* of mistakes/bias the paper reports) and `agent/llmAgent.js` (optional, calls a real Claude model) |
+| Agent under test | `agent/ruleAgent.js` (deterministic baseline with the same *class* of mistakes/bias the paper reports) and `agent/llmAgent.js` (optional, multi-vendor real-model agent) |
 | Exact-match scoring | `score.js` |
 | CRIT confidence calibration | `crit.js` — routes low-confidence answers to "flagged for human review" instead of auto-approving them |
 | Foreign-origin bias audit | `data/names.js` + `biasReport.js` — the `remitter_origin_probe` question type, tabulated by name-script category |
@@ -61,12 +61,47 @@ simulated baseline.
 npm run benchmark                 # rule-based baseline, CRIT calibration, bias audit
 node mortarbench/run.js --n 50 --bias-n 100 --seed 7   # bigger, different seed
 
-# Also evaluate a real model (needs ANTHROPIC_API_KEY in the environment):
-npm run benchmark:llm
+# Also evaluate real models:
+npm run benchmark:llm             # Claude only (needs ANTHROPIC_API_KEY)
+npm run benchmark:vendors         # every vendor below, needs matching keys
+node mortarbench/run.js --vendor chatgpt,gemini    # pick specific vendors
 ```
 
 Flags: `--n <per-type count>`, `--bias-n <bias probe count>`, `--seed <int>`,
-`--llm`.
+`--llm` (Claude only), `--vendor <name[,name...]|all>` (implies `--llm`).
+Any vendor missing its API key is skipped with a one-line notice rather than
+failing the run.
+
+## Vendors
+
+`agent/llmAgent.js` is a config-driven adapter over each vendor's chat API —
+no SDKs, just `fetch`. Model IDs are overridable per vendor
+(`MORTARBENCH_<VENDOR>_MODEL`) since lineups move fast and the hardcoded
+defaults below will go stale.
+
+| Vendor | `--vendor` name | API key env var | Default model |
+|---|---|---|---|
+| Claude (Anthropic) | `anthropic` / `claude` | `ANTHROPIC_API_KEY` | `claude-sonnet-5` |
+| ChatGPT (OpenAI) | `openai` / `chatgpt` / `gpt` | `OPENAI_API_KEY` | `gpt-4o` |
+| Gemini (Google) | `gemini` / `google` | `GEMINI_API_KEY` | `gemini-2.5-flash` |
+| DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` |
+
+These four are the ones with a public chat-completions-style API that fits
+this harness directly. A few real mortgage-specific products came up while
+researching this and are worth naming instead of silently ignoring:
+
+- **Tidalwave** is the paper's own industry co-author — not a vendor to
+  plug in here, but worth knowing they've since published real MortarBench
+  results for their agent ("SOLO"): 84% overall / 95% on compliance checks,
+  vs. 71% / 42% for Claude 4.5, per their [March 2026 release with Columbia's
+  DAPLab](https://www.businesswire.com/news/home/20260317118247/en/Tidalwave-and-Columbia-Universitys-DAPLab-Release-First-Public-Benchmark-for-AI-Accuracy-in-Mortgage-Origination).
+- **JazzX AI**, **Ocrolus**, and **Friday Harbor** are all real mortgage/lending
+  AI products (Ocrolus in particular does bank-statement/income analysis,
+  directly adjacent to this benchmark), but none expose a public
+  question-answering API that fits this harness's prompt/response shape —
+  they're enterprise, LOS-integrated, or document-extraction APIs rather than
+  a chat endpoint. Wiring one in would mean a bespoke adapter against that
+  product's actual API, not a `VENDOR_DEFS` entry.
 
 ## Caveats
 
